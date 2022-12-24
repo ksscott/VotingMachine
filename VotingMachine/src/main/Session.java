@@ -23,6 +23,8 @@ public class Session {
 		// Select a game to play with friends //
 		////////////////////////////////////////
 		
+		System.out.println("Choosing a game to play with friends");
+
 		Set<Race> races = new HashSet<>();
 		Set<Option> games = new HashSet<>();
 		for (Game game : Game.values()) {
