@@ -1,11 +1,6 @@
 package model;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public abstract class Vote {
 	public final Ballot ballot;
@@ -78,7 +73,7 @@ public abstract class Vote {
 		}
 		
 		public List<Option> getVote(Race race) {
-			return null;
+			return selections.get(race);
 		}
 	}
 }
