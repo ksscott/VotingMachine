@@ -1,17 +1,21 @@
 package discord.bot;
 
-import elections.games.Game;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class Bot extends ListenerAdapter {
+
+    private static Sesh sesh;
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -22,36 +26,26 @@ public class Bot extends ListenerAdapter {
         // We don't need any intents for this bot. Slash commands work without any intents!
         JDA jda = JDABuilder.createLight(args[0], Collections.emptyList())
                 .addEventListeners(new Bot())
-                .setActivity(Activity.playing("Type /ping"))
+                .setActivity(Activity.listening("The People's Votes"))
                 .build();
 
         // Sets the global command list to the provided commands (removing all others)
-        jda.updateCommands().addCommands(
-                Commands.slash("ping", "Calculate ping of the bot"),
-                Commands.slash("games", "Lists out the games that we can play")
-        ).queue();
+        List<SlashCommandData> commandList = Arrays.stream(SlashCommand.values())
+                .map(c -> c.addOptions(Commands.slash(c.slashText, c.description)))
+                .collect(Collectors.toList());
+        jda.updateCommands().addCommands(commandList).queue();
+
+        sesh = new Sesh();
     }
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        // make sure we handle the right command
-        switch (event.getName()) {
-            case "ping":
-                long time = System.currentTimeMillis();
-                event.reply("Pong!").setEphemeral(true) // reply or acknowledge
-                        .flatMap(v ->
-                                event.getHook().editOriginalFormat("Pong: %d ms", System.currentTimeMillis() - time) // then edit original
-                        ).queue(); // Queue both reply and edit
-                break;
-            case "games":
-                String gamesList = Game.shortList()
-                        .stream()
-                        .map(Game::getTitle)
-                        .sorted()
-                        .collect(Collectors.joining("\n"));
-                event.reply(gamesList).setEphemeral(true) // reply or acknowledge
-                        .queue(); // Queue both reply and edit
-                break;
+        if (event.getUser().isBot()) {
+            return; // Don't talk with other bots
+        } else if (!event.getChannel().getName().equalsIgnoreCase("bot-commands")) {
+            return; // Only works in the bot-commands channel
         }
+
+        SlashCommand.handle(event, sesh);
     }
 }

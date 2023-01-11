@@ -14,6 +14,7 @@ public class Election<V extends Vote> {
 	}
 	
 	public void addVote(V vote) {
+		this.votes.remove(vote); // Change an existing vote
 		this.votes.add(vote);
 	}
 	

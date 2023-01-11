@@ -10,7 +10,19 @@ public abstract class Vote {
 		this.ballot = ballot;
 		this.voterName = voterName;
 	}
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Vote vote)) return false;
+		return Objects.equals(ballot, vote.ballot) && Objects.equals(voterName, vote.voterName);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(ballot, voterName);
+	}
+
 	public static class SingleVote extends Vote {
 		private Map<Race,Option> selections;
 
@@ -66,7 +78,7 @@ public abstract class Vote {
 				throw new IllegalArgumentException("Choices must be unique");
 			}
 			if (!race.getOptions().containsAll(set)) {
-				throw new IllegalArgumentException("Invalid choice(s)");
+				throw new IllegalArgumentException("Option does not appear in this race");
 			}
 			
 			selections.put(race, choices);

@@ -65,7 +65,7 @@ public class Evaluator {
 		
 		for (Race race : ballot.getRaces()) {
 			Set<RankedChoiceVote> votes = election.getVotes();
-			Set<Option> winner = algorithm.evaluate(votes);
+			Set<Option> winner = algorithm.evaluate(votes); // FIXME votes should apply to each race
 			result.select(race, new ArrayList<>(winner));
 		}
 		

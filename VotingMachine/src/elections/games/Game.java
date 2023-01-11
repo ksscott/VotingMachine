@@ -1,7 +1,9 @@
 package elections.games;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public enum Game {
 	ASTRONEER("Astroneer"),
@@ -15,7 +17,7 @@ public enum Game {
 	FOXHOLE("Foxhole"),
 	HALO("Halo"),
 	HOMEWORLD("Homeworld"),
-	HUMANKIND("HUMANKING"),
+	HUMANKIND("HUMANKIND"),
 	IT_TAKES_TWO("It Takes Two"),
 	KEEP_TALKING_AND_NOBODY_EXPLODES("Keep Talking and Nobody Explodes"),
 	KINGDOM_TWO_CROWNS("Kingdom Two Crowns"),
@@ -51,6 +53,14 @@ public enum Game {
 	}
 
 	public String getTitle() { return title; }
+
+	public static Optional<Game> interpret(String input) {
+		return Arrays.stream(values()).filter(game -> game.title.toLowerCase().contains(input.toLowerCase())).findAny();
+	}
+
+	public static List<Game> fullList() {
+		return Arrays.asList(values());
+	}
 
 	public static List<Game> shortList() {
 		List<Game> shortList = new ArrayList<>();

@@ -33,8 +33,6 @@ public class CopelandMethod extends EvalAlgorithm {
 
         calculateCopelandScores();
 
-        System.out.println("Determined winner(s): " + determineWinners());
-
         return determineWinners();
     }
 
@@ -83,7 +81,7 @@ public class CopelandMethod extends EvalAlgorithm {
 
     private void calculateCopelandScores() {
         for (Option candidate : simulatedHeadToHeads.keySet()) {
-            Double score = 0.0;
+            double score = 0.0;
 
             Map<Option,ScorePair> candidateMatchups = simulatedHeadToHeads.get(candidate);
             for (Option opponent : candidateMatchups.keySet()) {
@@ -91,7 +89,6 @@ public class CopelandMethod extends EvalAlgorithm {
                 score += unit.points;
             }
 
-            System.out.println("Putting Copeland score of " + score + " for candidate " + candidate.name);
             copelandScores.put(candidate, score);
         }
     }
