@@ -100,8 +100,7 @@ public class Session {
 		}
 
 		// determine winner(s)
-		EvalAlgorithm method = new CopelandMethod(race);
-		RankedChoiceVote result = Evaluator.evaluateRankedChoice(election, method);
+		RankedChoiceVote result = Evaluator.evaluateRankedChoice(election, CopelandMethod::new);
 		List<Option> winningGames = result.getVote(race);
 
 		System.out.println();

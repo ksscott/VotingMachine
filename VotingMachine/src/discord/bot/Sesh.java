@@ -1,7 +1,6 @@
 package discord.bot;
 
 import algorithm.CopelandMethod;
-import algorithm.EvalAlgorithm;
 import algorithm.Evaluator;
 import elections.games.Game;
 import model.*;
@@ -11,13 +10,14 @@ import java.util.stream.Collectors;
 
 public class Sesh { // TODO threading issues?
     private Election<Vote.RankedChoiceVote> election;
+    private Race race;
 
     public void startElection() {
         Set<Option> games = new HashSet<>();
         for (Game game : Game.shortList()) {
             games.add(new Option(game.title));
         }
-        Race race = new Race("Game", games);
+        race = new Race("Game", games);
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
     }
@@ -36,7 +36,6 @@ public class Sesh { // TODO threading issues?
             orderedChoices.add(new Option(game.title));
         }
         Vote.RankedChoiceVote vote = new Vote.RankedChoiceVote(election.ballot, voterName);
-        Race race = election.ballot.getRaces().stream().findAny().get(); // FIXME
         vote.select(race, orderedChoices);
         addVote(vote);
     }
@@ -45,7 +44,9 @@ public class Sesh { // TODO threading issues?
         if (election == null) { throw new IllegalStateException("Start an election first"); }
 
         List<Game> games = Arrays.stream(gameStrings)
-                .map(input -> Game.interpret(input).get()) // FIXME
+                .map(input -> Game.interpret(input))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toList());
         addVote(voterName, games);
     }
@@ -55,9 +56,7 @@ public class Sesh { // TODO threading issues?
             throw new IllegalStateException("Start an election first");
         }
 
-        Race race = election.ballot.getRaces().stream().findAny().get(); // FIXME
-        EvalAlgorithm method = new CopelandMethod(race);
-        Vote.RankedChoiceVote result = Evaluator.evaluateRankedChoice(election, method);
+        Vote.RankedChoiceVote result = Evaluator.evaluateRankedChoice(election, CopelandMethod::new);
         return result.getVote(race);
     }
 }

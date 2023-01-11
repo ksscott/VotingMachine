@@ -7,7 +7,7 @@ import model.Vote;
 import java.util.*;
 
 public class InstantRunoff extends EvalAlgorithm {
-    // FIXME There's a corner case this algorithm doesn't account for
+    // WARNING There's a corner case this algorithm doesn't account for
     // where one person votes 1)A,2)B and the other votes 1)B,2)A
 
     private Map<Option, Set<Vote.RankedChoiceVote>> standings;

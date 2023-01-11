@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import model.Ballot;
 import model.Election;
@@ -59,13 +60,13 @@ public class Evaluator {
 		return winners;
 	}
 	
-	public static RankedChoiceVote evaluateRankedChoice(Election<RankedChoiceVote> election, EvalAlgorithm algorithm) {
+	public static RankedChoiceVote evaluateRankedChoice(Election<RankedChoiceVote> election, Function<Race,EvalAlgorithm> algorithm) {
 		Ballot ballot = election.ballot;
 		RankedChoiceVote result = new RankedChoiceVote(ballot, "Result");
 		
 		for (Race race : ballot.getRaces()) {
 			Set<RankedChoiceVote> votes = election.getVotes();
-			Set<Option> winner = algorithm.evaluate(votes); // FIXME votes should apply to each race
+			Set<Option> winner = algorithm.apply(race).evaluate(votes);
 			result.select(race, new ArrayList<>(winner));
 		}
 		
