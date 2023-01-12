@@ -2,12 +2,12 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.Vote;
+import model.RankedChoiceVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CopelandMethod extends EvalAlgorithm {
+public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
 
     private Map<Option,Map<Option,ScorePair>> simulatedHeadToHeads;
     private Map<Option, Double> copelandScores;
@@ -17,26 +17,25 @@ public class CopelandMethod extends EvalAlgorithm {
     }
 
     @Override
-    protected void initializeStandings() {
-        simulatedHeadToHeads = new HashMap<>();
-        for (Option candidate : race.getOptions()) {
-            simulatedHeadToHeads.put(candidate, new HashMap<>());
-            copelandScores = new HashMap<>();
-        }
-    }
-
-    @Override
-    public Set<Option> evaluate(Set<Vote.RankedChoiceVote> votes) {
+    public Set<Option> evaluate(Set<RankedChoiceVote> votes) {
         initializeStandings();
 
-        simulateMatchups(votes, new ArrayList<Option>(race.getOptions()));
+        simulateMatchups(votes, new ArrayList<>(race.options()));
 
         calculateCopelandScores();
 
         return determineWinners();
     }
 
-    private void simulateMatchups(Set<Vote.RankedChoiceVote> votes, List<Option> candidates) {
+    protected void initializeStandings() {
+        simulatedHeadToHeads = new HashMap<>();
+        for (Option candidate : race.options()) {
+            simulatedHeadToHeads.put(candidate, new HashMap<>());
+            copelandScores = new HashMap<>();
+        }
+    }
+
+    private void simulateMatchups(Set<RankedChoiceVote> votes, List<Option> candidates) {
         // iterate over candidate pairs
         for (int i = 0; i< candidates.size(); i++) {
             Option candidate = candidates.get(i);
@@ -45,7 +44,7 @@ public class CopelandMethod extends EvalAlgorithm {
                 ScorePair score = new ScorePair();
 
                 // iterate over votes
-                for (Vote.RankedChoiceVote vote : votes) {
+                for (RankedChoiceVote vote : votes) {
                     Option winner = score(candidate, other, vote);
                     if (candidate.equals(winner)) {
                         score.left = score.left + 1;
@@ -60,7 +59,7 @@ public class CopelandMethod extends EvalAlgorithm {
         }
     }
 
-    private Option score(Option candidate, Option other, Vote.RankedChoiceVote vote) {
+    private Option score(Option candidate, Option other, RankedChoiceVote vote) {
         List<Option> choices = vote.getVote(race);
 
         int candidateRank = choices.indexOf(candidate);
@@ -105,7 +104,9 @@ public class CopelandMethod extends EvalAlgorithm {
 
     private Set<Option> determineWinners() {
         Double winningScore = copelandScores.values()
-                .stream().max((o1, o2) -> (int) (o1-o2+1)).get();
+                .stream()
+                .max((o1, o2) -> (int) (o1-o2+1))
+                .orElse(-1.0); // no winners
         // Assume the winning score exists
         return copelandScores.keySet()
                 .stream()

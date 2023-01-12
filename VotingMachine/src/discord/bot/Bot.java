@@ -1,5 +1,6 @@
 package discord.bot;
 
+import main.Session;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class Bot extends ListenerAdapter {
 
-    private static Sesh sesh;
+    private static Session session;
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -35,7 +36,7 @@ public class Bot extends ListenerAdapter {
                 .collect(Collectors.toList());
         jda.updateCommands().addCommands(commandList).queue();
 
-        sesh = new Sesh();
+        session = new Session();
     }
 
     @Override
@@ -46,6 +47,6 @@ public class Bot extends ListenerAdapter {
             return; // Only works in the bot-commands channel
         }
 
-        SlashCommand.handle(event, sesh);
+        SlashCommand.handle(event, session);
     }
 }

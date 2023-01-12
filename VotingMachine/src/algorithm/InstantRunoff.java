@@ -2,16 +2,16 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.Vote;
+import model.RankedChoiceVote;
 
 import java.util.*;
 
-public class InstantRunoff extends EvalAlgorithm {
+public class InstantRunoff extends EvalAlgorithm<RankedChoiceVote> {
     // WARNING There's a corner case this algorithm doesn't account for
     // where one person votes 1)A,2)B and the other votes 1)B,2)A
 
-    private Map<Option, Set<Vote.RankedChoiceVote>> standings;
-    private Set<Vote.RankedChoiceVote> unassignedVoters;
+    private Map<Option, Set<RankedChoiceVote>> standings;
+    private Set<RankedChoiceVote> unassignedVoters;
 
     public InstantRunoff(Race race) {
         super(race);
@@ -19,7 +19,7 @@ public class InstantRunoff extends EvalAlgorithm {
 
     // return a set of tied winners
     @Override
-    public Set<Option> evaluate(Set<Vote.RankedChoiceVote> votes) {
+    public Set<Option> evaluate(Set<RankedChoiceVote> votes) {
         initializeStandings();
         System.out.println("Initializing standings...");
 
@@ -34,10 +34,9 @@ public class InstantRunoff extends EvalAlgorithm {
         return winners;
     }
 
-    @Override
     protected void initializeStandings() {
         this.standings = new HashMap<>();
-        race.getOptions().forEach(option -> standings.put(option, new HashSet<>()));
+        race.options().forEach(option -> standings.put(option, new HashSet<>()));
     }
 
     /**
@@ -77,7 +76,7 @@ public class InstantRunoff extends EvalAlgorithm {
 
     // assign unassigned voters
     private void caucus() {
-        for (Vote.RankedChoiceVote vote : unassignedVoters) {
+        for (RankedChoiceVote vote : unassignedVoters) {
 //            System.out.println("Assigning a voter: " + vote.voterName);
             // assign vote
             List<Option> choices = vote.getVote(race);
@@ -95,7 +94,7 @@ public class InstantRunoff extends EvalAlgorithm {
     }
 
     private Option strictWinner() {
-        int remainingVoterCount = (int) standings.values().stream().flatMap(set -> set.stream()).count();
+        int remainingVoterCount = (int) standings.values().stream().mapToLong(Set::size).sum();
 
         for (Option candidate : standings.keySet()) {
             if (standings.get(candidate).size() > remainingVoterCount / 2) {
@@ -107,7 +106,7 @@ public class InstantRunoff extends EvalAlgorithm {
 
     private Set<Option> losers() {
         Map<Option, Integer> count = new HashMap<>();
-        race.getOptions().forEach(option -> count.put(option, 0));
+        race.options().forEach(option -> count.put(option, 0));
 
         for (Option candidate : standings.keySet()) {
             count.put(candidate, standings.get(candidate).size());

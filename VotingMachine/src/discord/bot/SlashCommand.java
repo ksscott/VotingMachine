@@ -1,6 +1,8 @@
 package discord.bot;
 
 import elections.games.Game;
+import main.Session;
+import model.Option;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -23,7 +25,7 @@ public enum SlashCommand {
 //    }),
     GAMES_LIST("games", "Lists out the games that we can play",
         data -> data,
-        (event, sesh) -> {
+        (event, session) -> {
             List<Game> games = Game.shortList();
             String stringList = games
                     .stream()
@@ -35,8 +37,8 @@ public enum SlashCommand {
         }),
     NEW_POLL("new", "Begins a new election",
             data -> data,
-            (event, sesh) -> {
-                sesh.startElection();
+            (event, session) -> {
+                session.startElection();
 
                 String message = "New poll started! Type /vote to vote. Type '/games' to see a list of options.";
 
@@ -50,7 +52,7 @@ public enum SlashCommand {
                 data.addOption(OptionType.STRING, "fourth", "Fourth-favorite choice of a game to play");
                 return data.addOption(OptionType.STRING, "fifth", "Fifth-favorite choice of a game to play");
             },
-            (event, sesh) -> {
+            (event, session) -> {
                 String username = event.getUser().getName();
                 List<Game> gamesList = event.getOptions()
                         .stream()
@@ -61,7 +63,7 @@ public enum SlashCommand {
                         .collect(Collectors.toList());
 
                 try {
-                    sesh.addVote(username, gamesList);
+                    session.addVote(username, gamesList);
                 } catch (IllegalStateException e) {
                     event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
                     return;
@@ -73,17 +75,17 @@ public enum SlashCommand {
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,
-            (event, sesh) -> {
-                String winnersString = sesh.pickWinner()
+            (event, session) -> {
+                String winnersString = session.pickWinner()
                                 .stream()
-                                .map(o -> o.name)
+                                .map(Option::name)
                                 .sorted()
                                 .collect(Collectors.joining(", and "));
                 event.reply("The winner is: " + winnersString).queue();
             }),
     HELP("help", "Lists out available commands",
             data -> data,
-            (event, sesh) -> {
+            (event, session) -> {
                 String message = Arrays.stream(values())
                         .map(command -> "/"+command.slashText+" - "+command.description)
                         .collect(Collectors.joining("\n"));
@@ -94,12 +96,12 @@ public enum SlashCommand {
     public final String slashText;
     public final String description;
     private final UnaryOperator<SlashCommandData> optionsOperator;
-    private final BiConsumer<SlashCommandInteractionEvent,Sesh> eventHandler;
+    private final BiConsumer<SlashCommandInteractionEvent, Session> eventHandler;
 
     SlashCommand(String slashText,
                  String description,
                  UnaryOperator<SlashCommandData> optionsOperator,
-                 BiConsumer<SlashCommandInteractionEvent,Sesh> eventHandler) {
+                 BiConsumer<SlashCommandInteractionEvent, Session> eventHandler) {
         this.slashText = slashText;
         this.description = description;
         this.optionsOperator = optionsOperator;
@@ -110,10 +112,10 @@ public enum SlashCommand {
         return optionsOperator.apply(data);
     }
 
-    public static void handle(SlashCommandInteractionEvent event, Sesh sesh) {
+    public static void handle(SlashCommandInteractionEvent event, Session session) {
         for (SlashCommand command : values()) {
             if (command.slashText.equalsIgnoreCase(event.getName())) {
-                command.eventHandler.accept(event, sesh);
+                command.eventHandler.accept(event, session);
                 break;
             }
         }

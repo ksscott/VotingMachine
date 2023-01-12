@@ -1,40 +1,12 @@
 package model;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import org.apache.commons.collections4.set.UnmodifiableSet;
 
-public class Ballot {
-	public final String name;
-	private Set<Race> races;
-	
-	public Ballot(String name, Set<Race> races) {
-		this.name = name;
-		this.races = races;
-	}
+import java.util.*;
+
+public record Ballot(String name, UnmodifiableSet<Race> races) {
 
 	public Ballot(String name, Race... races) {
-		this(name, new HashSet<>());
-		for (Race race : races) {
-			this.races.add(race);
-		}
-	}
-	
-	public Set<Race> getRaces() {
-		return Collections.unmodifiableSet(races);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		Ballot ballot = (Ballot) o;
-		return Objects.equals(name, ballot.name) && Objects.equals(races, ballot.races);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(name, races);
+		this(name, (UnmodifiableSet<Race>) Set.of(races));
 	}
 }
