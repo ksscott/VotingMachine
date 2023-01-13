@@ -28,7 +28,6 @@ public class DescendingPoints extends EvalAlgorithm<RankedChoiceVote> {
             for (Option option : vote.getVote(race)) {
                 double points = pointsForRank(rank++);
                 scores.put(option, scores.get(option) + points);
-                System.out.println("Adding " + points + " points for game " + option.name());
             }
         }
 
@@ -47,7 +46,6 @@ public class DescendingPoints extends EvalAlgorithm<RankedChoiceVote> {
                 .stream()
                 .max(Double::compareTo)
                 .orElse(-1.0); // no winners
-        System.out.println("Winning score: " + winningScore);
         // Assume the winning score exists
         return scores.keySet()
                 .stream()
