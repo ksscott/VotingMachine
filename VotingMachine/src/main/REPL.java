@@ -22,7 +22,7 @@ public class REPL {
 		System.out.println("Choosing a game to play with friends");
 
 		Scanner scanner = new Scanner(System.in);
-		Game[] gameList = Game.values();
+		List<Game> gameList = Game.shortList();
 
 		Session session = new Session();
 		session.startElection();
@@ -73,7 +73,7 @@ public class REPL {
 
 		// determine winner(s)
 		List<Option> winningGames = session.pickWinner();
-		List<String> winningNames = winningGames.stream().map(Option::toString).sorted().collect(Collectors.toList());
+		List<String> winningNames = winningGames.stream().map(Option::name).sorted().collect(Collectors.toList());
 
 		System.out.println();
 		System.out.println("The winner is: " + String.join(", and ", winningNames));

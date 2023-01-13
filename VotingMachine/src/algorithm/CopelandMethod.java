@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 
 public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
 
+    // WARNING: This method has a problem where voting [A,B,C] and [D]
+    // gives fewer points to D than A because vote 1 puts B & C over D
+
     private Map<Option,Map<Option,ScorePair>> simulatedHeadToHeads;
     private Map<Option, Double> copelandScores;
 
@@ -88,6 +91,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
                 score += unit.points;
             }
 
+            System.out.println("Score " + score + " for game " + candidate.name());
             copelandScores.put(candidate, score);
         }
     }
@@ -105,7 +109,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
     private Set<Option> determineWinners() {
         Double winningScore = copelandScores.values()
                 .stream()
-                .max((o1, o2) -> (int) (o1-o2+1))
+                .max(Double::compareTo)
                 .orElse(-1.0); // no winners
         // Assume the winning score exists
         return copelandScores.keySet()

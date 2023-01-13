@@ -19,7 +19,7 @@ public class RankedChoiceVote extends Vote {
             throw new IllegalArgumentException("Choices must be unique");
         }
         if (!race.options().containsAll(set)) {
-            throw new IllegalArgumentException("Option does not appear in this race");
+            throw new IllegalArgumentException("Option(s) do not appear in this race");
         }
 
         selections.put(race, choices);

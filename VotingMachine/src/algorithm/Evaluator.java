@@ -18,7 +18,7 @@ public class Evaluator {
 	}
 
 	public static RankedChoiceVote evaluateRankedChoice(Election<RankedChoiceVote> election) {
-		return evaluateElection(election, CopelandMethod::new);
+		return evaluateElection(election, DescendingPoints::new);
 	}
 
 	public static <V extends Vote> RankedChoiceVote evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
