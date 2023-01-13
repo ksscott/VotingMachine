@@ -35,6 +35,7 @@ public enum Game {
 	SATISFACTORY("Satisfactory"),
 	SEVEN_DAYS_TO_DIE("7 Days to Die"),
 	SPACE_ENGINEERS("Space Engineers"),
+	STARCRAFT("StarCraft"),
 	STELLARIS("Stellaris"),
 	TABLETOP_SIMULATOR("Tabletop Simulator"),
 	TERRARIA("Terraria"),
@@ -77,6 +78,7 @@ public enum Game {
 		shortList.add(RISK_OF_RAIN_2);
 		shortList.add(SEVEN_DAYS_TO_DIE);
 		shortList.add(STELLARIS);
+		shortList.add(STARCRAFT);
 		shortList.add(TERRARIA);
 		shortList.add(TWELVE_ORBITS);
 		shortList.add(ULTIMATE_CHICKEN_HORSE);
