@@ -70,7 +70,7 @@ public enum SlashCommand {
                 }
 
                 String namesList = gamesList.stream().map(Game::getTitle).collect(Collectors.joining("\n"));
-                event.reply("Voted for game: " + String.join("\n", namesList)).setEphemeral(true).queue();
+                event.reply("Voted for game: " + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
                 event.getChannel().sendMessage(username + " voted.").queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
