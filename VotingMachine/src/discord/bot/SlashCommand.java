@@ -64,7 +64,7 @@ public enum SlashCommand {
 
                 try {
                     session.addVote(username, gamesList);
-                } catch (IllegalStateException e) {
+                } catch (IllegalArgumentException | IllegalStateException e) {
                     event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
                     return;
                 }

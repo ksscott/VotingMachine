@@ -19,8 +19,6 @@ public class DescendingPoints extends EvalAlgorithm<RankedChoiceVote> {
 
     @Override
     public Set<Option> evaluate(Set<RankedChoiceVote> votes) {
-        System.out.println("Tallying votes:"); // votes are correct here
-        votes.stream().map(v -> v.getVote(race)).forEach(System.out::println);
         initializeStandings();
 
         for (RankedChoiceVote vote : votes) {

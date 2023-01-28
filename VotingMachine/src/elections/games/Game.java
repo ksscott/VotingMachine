@@ -9,13 +9,16 @@ public enum Game {
 	ASTRONEER("Astroneer"),
 	BATTLEBLOCK_THEATER("BattleBlock Theater"),
 	BOOMERANG_FU("Boomerang Fu"),
+	CHESS("Chess"),
 	CIVILIZATION_6("Sid Meier's Civilization IV"),
 	COSMOTEER("Cosmoteer"),
 	DONT_STARVE_TOGETHER("Don't Starve Together"),
+	ECO("Eco"),
 	FACTORIO("Factorio"),
 	FIVE_D_CHESS("5D Chess"),
 	FOXHOLE("Foxhole"),
 	HALO("Halo"),
+	HEROES_OF_THE_STORM("Heroes of the Storm"),
 	HOMEWORLD("Homeworld"),
 	HUMANKIND("HUMANKIND"),
 	IT_TAKES_TWO("It Takes Two"),
@@ -67,8 +70,11 @@ public enum Game {
 		List<Game> shortList = new ArrayList<>();
 		shortList.add(ASTRONEER);
 		shortList.add(BOOMERANG_FU);
+		shortList.add(CHESS);
+		shortList.add(ECO);
 		shortList.add(FACTORIO);
 		shortList.add(FOXHOLE);
+		shortList.add(HEROES_OF_THE_STORM);
 		shortList.add(KEEP_TALKING_AND_NOBODY_EXPLODES);
 		shortList.add(LOVERS_IN_A_DANGEROUS_SPACETIME);
 		shortList.add(MOVING_OUT);
