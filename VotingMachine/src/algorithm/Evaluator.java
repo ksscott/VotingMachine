@@ -1,34 +1,36 @@
 package algorithm;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
 import model.*;
-import model.RankedChoiceVote;
-import model.SingleVote;
+import model.vote.RankedChoiceVote;
+import model.vote.SingleVote;
+import model.vote.Vote;
 
 public class Evaluator {
 	
 	/**
 	 * @return a RankedChoiceVote, using multiple choices to indicate tying winners of a race
 	 */
-	public static RankedChoiceVote evaluateSingle(Election<SingleVote> election) {
+	public static Map<Race,Set<Option>> evaluateSingle(Election<SingleVote> election) {
 		return evaluateElection(election, SingleChoice::new);
 	}
 
-	public static RankedChoiceVote evaluateRankedChoice(Election<RankedChoiceVote> election) {
+	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<RankedChoiceVote> election) {
 		return evaluateElection(election, DescendingPoints::new);
 	}
 
-	public static <V extends Vote> RankedChoiceVote evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
+	public static <V extends Vote> Map<Race,Set<Option>> evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
 		Ballot ballot = election.ballot;
-		RankedChoiceVote result = new RankedChoiceVote(ballot, "Result");
-		
+		Map<Race, Set<Option>> result = new HashMap<>();
+
 		for (Race race : ballot.races()) {
-			Set<V> votes = election.getVotes();
-			Set<Option> winner = algorithm.apply(race).evaluate(votes);
-			result.select(race, new ArrayList<>(winner));
+			Set<V> votes = election.getVotes(race);
+			Set<Option> winners = algorithm.apply(race).evaluate(votes);
+			result.put(race, winners);
 		}
 		
 		return result;

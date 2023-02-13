@@ -2,7 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.Vote;
+import model.vote.Vote;
 
 import java.util.Set;
 

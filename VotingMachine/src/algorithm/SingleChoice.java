@@ -2,7 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.SingleVote;
+import model.vote.SingleVote;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,7 +21,7 @@ public class SingleChoice extends EvalAlgorithm<SingleVote> {
         race.options().forEach(option -> count.put(option, 0));
 
         for (SingleVote vote : votes) {
-            Option choice = vote.getVote(race);
+            Option choice = vote.getVote();
             if (choice != null) {
                 count.put(choice, count.get(choice)+1);
             }

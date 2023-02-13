@@ -2,7 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.RankedChoiceVote;
+import model.vote.RankedChoiceVote;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +23,7 @@ public class DescendingPoints extends EvalAlgorithm<RankedChoiceVote> {
 
         for (RankedChoiceVote vote : votes) {
             int rank = 1;
-            for (Option option : vote.getVote(race)) {
+            for (Option option : vote.getVote()) {
                 double points = pointsForRank(rank++);
                 scores.put(option, scores.get(option) + points);
             }

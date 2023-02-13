@@ -1,13 +1,15 @@
-package model;
+package model.vote;
+
+import model.Race;
 
 import java.util.*;
 
 public abstract class Vote {
-	public final Ballot ballot;
+	public final Race race;
 	public final String voterName;
 	
-	public Vote(Ballot ballot, String voterName) {
-		this.ballot = ballot;
+	public Vote(Race race, String voterName) {
+		this.race = race;
 		this.voterName = voterName;
 	}
 
@@ -15,11 +17,11 @@ public abstract class Vote {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Vote vote)) return false;
-		return Objects.equals(ballot, vote.ballot) && Objects.equals(voterName, vote.voterName);
+		return Objects.equals(race, vote.race) && Objects.equals(voterName, vote.voterName);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ballot, voterName);
+		return Objects.hash(race, voterName);
 	}
 }

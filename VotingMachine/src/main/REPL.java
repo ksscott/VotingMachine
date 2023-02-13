@@ -72,8 +72,11 @@ public class REPL {
 		}
 
 		// determine winner(s)
-		List<Option> winningGames = session.pickWinner();
-		List<String> winningNames = winningGames.stream().map(Option::name).sorted().collect(Collectors.toList());
+		List<String> winningNames = session.pickWinner()
+				.stream()
+				.map(Option::name)
+				.sorted()
+				.collect(Collectors.toList());
 
 		System.out.println();
 		System.out.println("The winner is: " + String.join(", and ", winningNames));

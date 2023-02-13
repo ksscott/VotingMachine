@@ -2,7 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.RankedChoiceVote;
+import model.vote.RankedChoiceVote;
 
 import java.util.*;
 
@@ -79,7 +79,7 @@ public class InstantRunoff extends EvalAlgorithm<RankedChoiceVote> {
         for (RankedChoiceVote vote : unassignedVoters) {
 //            System.out.println("Assigning a voter: " + vote.voterName);
             // assign vote
-            List<Option> choices = vote.getVote(race);
+            List<Option> choices = vote.getVote();
 //            System.out.println("Selections: " + choices);
             for (Option option : choices) {
 //                System.out.println("Voted for: " + option.name);

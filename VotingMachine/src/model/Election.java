@@ -1,25 +1,33 @@
 package model;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import model.vote.Vote;
+
+import java.util.*;
 
 public class Election<V extends Vote> {
 
 	public final Ballot ballot;
-	private Set<V> votes;
+	private Map<Race, Set<V>> votes;
 
 	public Election(Ballot ballot) {
 		this.ballot = ballot;
-		this.votes = new HashSet<>();
+		this.votes = new HashMap<>();
+		for (Race race : ballot.races()) {
+			votes.put(race, new HashSet<>());
+		}
 	}
 
-	public void addVote(V vote) {
-		this.votes.remove(vote); // Change an existing vote
-		this.votes.add(vote);
+	public void addVote(Race race, V vote) {
+		if (!ballot.races().contains(race)) {
+			throw new IllegalArgumentException("Race does not appear on this ballot");
+		}
+		this.votes.get(race).add(vote);
 	}
 
-	public Set<V> getVotes() {
-		return Collections.unmodifiableSet(votes);
+	public Set<V> getVotes(Race race) {
+		if (!ballot.races().contains(race)) {
+			throw new IllegalArgumentException("Race does not appear on this ballot");
+		}
+		return Collections.unmodifiableSet(votes.get(race));
 	}
 }

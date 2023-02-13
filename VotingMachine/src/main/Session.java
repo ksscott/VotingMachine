@@ -3,6 +3,7 @@ package main;
 import algorithm.Evaluator;
 import elections.games.Game;
 import model.*;
+import model.vote.RankedChoiceVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ public class Session { // TODO threading issues?
     public void addVote(RankedChoiceVote vote) {
         requireElection();
 
-        election.addVote(vote);
+        election.addVote(race, vote);
     }
 
     public void addVote(String voterName, List<Game> games) {
@@ -36,8 +37,8 @@ public class Session { // TODO threading issues?
                 .map(Option::new)
                 .collect(Collectors.toList());
 
-        RankedChoiceVote vote = new RankedChoiceVote(election.ballot, voterName);
-        vote.select(race, orderedChoices);
+        RankedChoiceVote vote = new RankedChoiceVote(race, voterName);
+        vote.select(orderedChoices);
         addVote(vote);
     }
 
@@ -53,11 +54,11 @@ public class Session { // TODO threading issues?
         addVote(voterName, games);
     }
 
-    public List<Option> pickWinner() {
+    public Set<Option> pickWinner() {
         requireElection();
 
-        RankedChoiceVote result = Evaluator.evaluateRankedChoice(election);
-        return result.getVote(race);
+        Map<Race,Set<Option>> result = Evaluator.evaluateRankedChoice(election);
+        return result.get(race);
     }
 
     private void requireElection() {

@@ -2,7 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.RankedChoiceVote;
+import model.vote.RankedChoiceVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,7 +63,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
     }
 
     private Option score(Option candidate, Option other, RankedChoiceVote vote) {
-        List<Option> choices = vote.getVote(race);
+        List<Option> choices = vote.getVote();
 
         int candidateRank = choices.indexOf(candidate);
         int otherRank = choices.indexOf(other);
