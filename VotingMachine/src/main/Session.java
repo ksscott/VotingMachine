@@ -5,6 +5,7 @@ import elections.games.Game;
 import model.*;
 import model.vote.RankedVote;
 import model.vote.SimpleRankingVote;
+import model.vote.WeightedVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,7 +41,8 @@ public class Session { // TODO threading issues?
 
         SimpleRankingVote vote = new SimpleRankingVote(race, voterName);
         vote.select(orderedChoices);
-        addVote(vote);
+//        addVote(vote);
+        addVote(WeightedVote.fromVote(vote)); // FIXME Force a weighting
     }
 
     public void addVote(String voterName, String... gameStrings) {

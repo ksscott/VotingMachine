@@ -27,4 +27,10 @@ public class SimpleRankingVote extends RankedVote {
 
         selections = choices;
     }
+
+    public static SimpleRankingVote fromSingleVote(SingleVote singleVote) {
+        SimpleRankingVote vote = new SimpleRankingVote(singleVote.race, singleVote.voterName);
+        vote.select( Collections.singletonList(singleVote.getVote()));
+        return vote;
+    }
 }

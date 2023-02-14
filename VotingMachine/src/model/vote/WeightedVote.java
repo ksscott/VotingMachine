@@ -81,6 +81,7 @@ public class WeightedVote extends RankedVote {
         return vote;
     }
 
+
     public static WeightedVote rateDescending(RankedVote vote) {
         WeightedVote result = new WeightedVote(vote.race, vote.voterName);
         int rank = 1;
@@ -89,6 +90,17 @@ public class WeightedVote extends RankedVote {
             result.rate(option, points);
         }
         return result;
+    }
+
+    public static WeightedVote fromVote(Vote vote) {
+        if (vote instanceof WeightedVote wv) {
+            return wv;
+        } else if (vote instanceof RankedVote rv) {
+            return rateDescending(rv);
+        } else {
+            SimpleRankingVote srv = SimpleRankingVote.fromSingleVote(vote.toSingleVote());
+            return rateDescending(srv);
+        }
     }
 
     private static double pointsForRank(int rank) {
