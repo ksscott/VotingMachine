@@ -2,26 +2,26 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.vote.SingleVote;
+import model.vote.Vote;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class SingleChoice extends EvalAlgorithm<SingleVote> {
+public class SingleChoice extends EvalAlgorithm<Vote> {
 
     public SingleChoice(Race race) {
         super(race);
     }
 
     @Override
-    public Set<Option> evaluate(Set<SingleVote> votes) {
+    public Set<Option> evaluate(Set<Vote> votes) {
         Map<Option, Integer> count = new HashMap<>();
         race.options().forEach(option -> count.put(option, 0));
 
-        for (SingleVote vote : votes) {
-            Option choice = vote.getVote();
+        for (Vote vote : votes) {
+            Option choice = vote.toSingleVote().getVote();
             if (choice != null) {
                 count.put(choice, count.get(choice)+1);
             }

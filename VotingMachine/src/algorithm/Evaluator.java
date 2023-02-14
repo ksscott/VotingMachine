@@ -13,7 +13,7 @@ public class Evaluator {
 	/**
 	 * @return a RankedChoiceVote, using multiple choices to indicate tying winners of a race
 	 */
-	public static Map<Race,Set<Option>> evaluateSingle(Election<SingleVote> election) {
+	public static Map<Race,Set<Option>> evaluateSingle(Election<Vote> election) {
 		return evaluateElection(election, SingleChoice::new);
 	}
 

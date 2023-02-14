@@ -13,6 +13,8 @@ public abstract class Vote {
 		this.voterName = voterName;
 	}
 
+	public abstract SingleVote toSingleVote();
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

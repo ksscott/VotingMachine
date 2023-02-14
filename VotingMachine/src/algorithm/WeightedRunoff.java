@@ -2,29 +2,26 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.vote.RankedVote;
+import model.vote.WeightedVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class InstantRunoff extends EvalAlgorithm<RankedVote> {
-    // WARNING There's a corner case this algorithm doesn't account for
-    // where one person votes 1)A,2)B and the other votes 1)B,2)A
+public class WeightedRunoff extends EvalAlgorithm<WeightedVote> {
 
-    private Map<Option, Set<RankedVote>> standings;
-    private Set<RankedVote> unassignedVoters;
+    private Map<Option, Double> standings;
+    private Set<WeightedVote> voters;
 
-    public InstantRunoff(Race race) {
+    public WeightedRunoff(Race race) {
         super(race);
     }
 
-    // return a set of tied winners
     @Override
-    public Set<Option> evaluate(Set<RankedVote> votes) {
+    public Set<Option> evaluate(Set<WeightedVote> votes) {
         initializeStandings();
         System.out.println("Initializing standings...");
 
-        this.unassignedVoters = votes;
+        this.voters = votes;
 
         Set<Option> winners = null;
         while (winners == null) {
@@ -35,16 +32,16 @@ public class InstantRunoff extends EvalAlgorithm<RankedVote> {
         return winners;
     }
 
-    protected void initializeStandings() {
+    private void initializeStandings() {
         this.standings = new HashMap<>();
-        race.options().forEach(option -> standings.put(option, new HashSet<>()));
+        race.options().forEach(option -> standings.put(option, 0.0));
     }
 
     /**
      * @return winners, if they have yet been found, null otherwise
      */
     private Set<Option> evaluateRound() {
-        // assign unassigned voters
+        // assign all voters
         caucus();
 
         // if strict majority, return winner
@@ -55,7 +52,7 @@ public class InstantRunoff extends EvalAlgorithm<RankedVote> {
             return winningSet;
         }
 
-        // find candidate(s) with least votes
+        // find candidate(s) with lowest score
         Set<Option> losingCandidates = losers();
 
         // if no losers, return all winners
@@ -66,8 +63,6 @@ public class InstantRunoff extends EvalAlgorithm<RankedVote> {
         // WARNING: if there's a tie for loser, this removes ALL losers
         for (Option loser : losingCandidates) {
 //            System.out.println("Removing loser: " + loser.name);
-            // unassign their voters
-            unassignedVoters.addAll(standings.get(loser));
             // drop the candidate
             standings.remove(loser);
         }
@@ -77,29 +72,25 @@ public class InstantRunoff extends EvalAlgorithm<RankedVote> {
 
     // assign unassigned voters
     private void caucus() {
-        for (RankedVote vote : unassignedVoters) {
-//            System.out.println("Assigning a voter: " + vote.voterName);
-            // assign vote
-            List<Option> choices = vote.getRankings();
-//            System.out.println("Selections: " + choices);
-            for (Option option : choices) {
-//                System.out.println("Voted for: " + option.name);
-                if (standings.containsKey(option)) {
-                    standings.get(option).add(vote);
-//                    System.out.println("Adding vote to " + option.name);
-                    break;
-                }
+        // reset scores
+        standings.keySet().forEach(option -> standings.put(option, 0.0));
+
+        for (WeightedVote vote : voters) {
+            vote.normalizeAcross(standings.keySet());
+            for (Option option : standings.keySet()) {
+                Double rating = vote.getNormalizedRating(option);
+                double unboxed = rating == null ? 0.0 : rating;
+                standings.put(option, standings.get(option) + unboxed);
             }
         }
-        unassignedVoters = new HashSet<>();
     }
 
     private Option strictWinner() {
-        int remainingVoterCount = (int) standings.values().stream().mapToLong(Set::size).sum();
+        double scoreToWin = voters.size() / 2.0;
 
         return standings.keySet()
                 .stream()
-                .filter(candidate -> standings.get(candidate).size() > remainingVoterCount / 2)
+                .filter(candidate -> standings.get(candidate) > scoreToWin)
                 .findAny()
                 .orElse(null);
     }
@@ -107,12 +98,11 @@ public class InstantRunoff extends EvalAlgorithm<RankedVote> {
     private Set<Option> losers() {
         double lowestScore = standings.values()
                 .stream()
-                .mapToInt(Set::size)
-                .reduce(Integer::min)
-                .orElse(Integer.MAX_VALUE);
+                .min(Double::compareTo)
+                .orElse(Double.MAX_VALUE);
         Set<Option> losers = standings.keySet()
                 .stream()
-                .filter(candidate -> standings.get(candidate).size() <= lowestScore)
+                .filter(candidate -> standings.get(candidate) <= lowestScore)
                 .collect(Collectors.toSet());
         // check for: all winners, no losers
         return losers.size() == standings.size() ? null : losers;

@@ -50,7 +50,8 @@ public enum SlashCommand {
                 data.addOption(OptionType.STRING, "second", "Second-favorite choice of a game to play");
                 data.addOption(OptionType.STRING, "third", "Third-favorite choice of a game to play");
                 data.addOption(OptionType.STRING, "fourth", "Fourth-favorite choice of a game to play");
-                return data.addOption(OptionType.STRING, "fifth", "Fifth-favorite choice of a game to play");
+                data.addOption(OptionType.STRING, "fifth", "Fifth-favorite choice of a game to play");
+                return data;
             },
             (event, session) -> {
                 String username = event.getUser().getName();

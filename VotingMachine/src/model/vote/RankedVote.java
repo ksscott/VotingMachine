@@ -11,6 +11,7 @@ public abstract class RankedVote extends Vote {
 
     public abstract List<Option> getRankings();
 
+    @Override
     public SingleVote toSingleVote() {
         SingleVote vote = new SingleVote(this.race, this.voterName);
         if (!getRankings().isEmpty()) {
