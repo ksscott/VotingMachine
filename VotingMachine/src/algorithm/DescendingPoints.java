@@ -2,40 +2,54 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.vote.RankedChoiceVote;
+import model.vote.RankedVote;
+import model.vote.WeightedVote;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class DescendingPoints extends EvalAlgorithm<RankedChoiceVote> {
+public class DescendingPoints extends EvalAlgorithm<RankedVote> {
 
     private Map<Option,Double> scores;
+    private Set<WeightedVote> votes;
 
     public DescendingPoints(Race race) {
         super(race);
+        this.votes = new HashSet<>();
     }
 
+    /**
+     * Accepts a WeightedVote or else converts using {@link model.vote.WeightedVote#rateDescending(RankedVote)}}
+     */
     @Override
-    public Set<Option> evaluate(Set<RankedChoiceVote> votes) {
+    public Set<Option> evaluate(Set<RankedVote> rankedVotes) {
+        this.votes = new HashSet<>();
+        for (RankedVote vote : rankedVotes) {
+            WeightedVote toAdd = (vote instanceof WeightedVote) ?
+                    ((WeightedVote) vote) : WeightedVote.rateDescending(vote);
+            votes.add(toAdd);
+        }
+
         initializeStandings();
 
-        for (RankedChoiceVote vote : votes) {
-            int rank = 1;
-            for (Option option : vote.getVote()) {
-                double points = pointsForRank(rank++);
-                scores.put(option, scores.get(option) + points);
-            }
-        }
+        caucus();
 
         return determineWinners();
     }
 
     private void initializeStandings() {
         scores = new HashMap<>();
-        for (Option option : race.options()) {
-            scores.put(option, 0.0);
+        race.options().forEach(opt -> scores.put(opt, 0.0));
+    }
+
+    private void caucus() {
+        for (WeightedVote vote : votes) {
+            for (Option option : vote.getRankings()) {
+                scores.put(option, scores.get(option) + vote.getNormalizedRating(option));
+            }
         }
     }
 
@@ -49,9 +63,5 @@ public class DescendingPoints extends EvalAlgorithm<RankedChoiceVote> {
                 .stream()
                 .filter(option -> winningScore.equals(scores.get(option)))
                 .collect(Collectors.toSet());
-    }
-
-    private double pointsForRank(int rank) {
-        return 2.0/((double) (rank+1)); // 1->1.0, 2->0.67, 3->0.5, 4->0.4, 5->0.33, ...
     }
 }

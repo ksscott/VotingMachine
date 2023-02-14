@@ -2,16 +2,16 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.vote.RankedChoiceVote;
+import model.vote.RankedVote;
 
 import java.util.*;
 
-public class InstantRunoff extends EvalAlgorithm<RankedChoiceVote> {
+public class InstantRunoff extends EvalAlgorithm<RankedVote> {
     // WARNING There's a corner case this algorithm doesn't account for
     // where one person votes 1)A,2)B and the other votes 1)B,2)A
 
-    private Map<Option, Set<RankedChoiceVote>> standings;
-    private Set<RankedChoiceVote> unassignedVoters;
+    private Map<Option, Set<RankedVote>> standings;
+    private Set<RankedVote> unassignedVoters;
 
     public InstantRunoff(Race race) {
         super(race);
@@ -19,7 +19,7 @@ public class InstantRunoff extends EvalAlgorithm<RankedChoiceVote> {
 
     // return a set of tied winners
     @Override
-    public Set<Option> evaluate(Set<RankedChoiceVote> votes) {
+    public Set<Option> evaluate(Set<RankedVote> votes) {
         initializeStandings();
         System.out.println("Initializing standings...");
 
@@ -76,10 +76,10 @@ public class InstantRunoff extends EvalAlgorithm<RankedChoiceVote> {
 
     // assign unassigned voters
     private void caucus() {
-        for (RankedChoiceVote vote : unassignedVoters) {
+        for (RankedVote vote : unassignedVoters) {
 //            System.out.println("Assigning a voter: " + vote.voterName);
             // assign vote
-            List<Option> choices = vote.getVote();
+            List<Option> choices = vote.getRankings();
 //            System.out.println("Selections: " + choices);
             for (Option option : choices) {
 //                System.out.println("Voted for: " + option.name);

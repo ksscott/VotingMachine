@@ -3,13 +3,14 @@ package main;
 import algorithm.Evaluator;
 import elections.games.Game;
 import model.*;
-import model.vote.RankedChoiceVote;
+import model.vote.RankedVote;
+import model.vote.SimpleRankingVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Session { // TODO threading issues?
-    private Election<RankedChoiceVote> election;
+    private Election<RankedVote> election;
     private Race race;
 
     public void startElection() {
@@ -23,7 +24,7 @@ public class Session { // TODO threading issues?
         election = new Election<>(ballot);
     }
 
-    public void addVote(RankedChoiceVote vote) {
+    public void addVote(RankedVote vote) {
         requireElection();
 
         election.addVote(race, vote);
@@ -37,7 +38,7 @@ public class Session { // TODO threading issues?
                 .map(Option::new)
                 .collect(Collectors.toList());
 
-        RankedChoiceVote vote = new RankedChoiceVote(race, voterName);
+        SimpleRankingVote vote = new SimpleRankingVote(race, voterName);
         vote.select(orderedChoices);
         addVote(vote);
     }

@@ -6,9 +6,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import model.*;
-import model.vote.RankedChoiceVote;
-import model.vote.SingleVote;
-import model.vote.Vote;
+import model.vote.*;
 
 public class Evaluator {
 	
@@ -19,7 +17,7 @@ public class Evaluator {
 		return evaluateElection(election, SingleChoice::new);
 	}
 
-	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<RankedChoiceVote> election) {
+	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<RankedVote> election) {
 		return evaluateElection(election, DescendingPoints::new);
 	}
 

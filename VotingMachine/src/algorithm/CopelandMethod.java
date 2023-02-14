@@ -2,12 +2,12 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.vote.RankedChoiceVote;
+import model.vote.SimpleRankingVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
+public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
 
     // WARNING: This method has a problem where voting [A,B,C] and [D]
     // gives fewer points to D than A because vote 1 puts B & C over D
@@ -20,7 +20,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
     }
 
     @Override
-    public Set<Option> evaluate(Set<RankedChoiceVote> votes) {
+    public Set<Option> evaluate(Set<SimpleRankingVote> votes) {
         initializeStandings();
 
         simulateMatchups(votes, new ArrayList<>(race.options()));
@@ -38,7 +38,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
         }
     }
 
-    private void simulateMatchups(Set<RankedChoiceVote> votes, List<Option> candidates) {
+    private void simulateMatchups(Set<SimpleRankingVote> votes, List<Option> candidates) {
         // iterate over candidate pairs
         for (int i = 0; i< candidates.size(); i++) {
             Option candidate = candidates.get(i);
@@ -47,7 +47,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
                 ScorePair score = new ScorePair();
 
                 // iterate over votes
-                for (RankedChoiceVote vote : votes) {
+                for (SimpleRankingVote vote : votes) {
                     Option winner = score(candidate, other, vote);
                     if (candidate.equals(winner)) {
                         score.left = score.left + 1;
@@ -62,8 +62,8 @@ public class CopelandMethod extends EvalAlgorithm<RankedChoiceVote> {
         }
     }
 
-    private Option score(Option candidate, Option other, RankedChoiceVote vote) {
-        List<Option> choices = vote.getVote();
+    private Option score(Option candidate, Option other, SimpleRankingVote vote) {
+        List<Option> choices = vote.getRankings();
 
         int candidateRank = choices.indexOf(candidate);
         int otherRank = choices.indexOf(other);

@@ -5,13 +5,16 @@ import model.Race;
 
 import java.util.*;
 
-public class RankedChoiceVote extends Vote {
+public class SimpleRankingVote extends RankedVote {
     private List<Option> selections;
 
-    public RankedChoiceVote(Race race, String voterName) {
+    public SimpleRankingVote(Race race, String voterName) {
         super(race, voterName);
         this.selections = new ArrayList<>();
     }
+
+    @Override
+    public List<Option> getRankings() { return new ArrayList<>(selections); }
 
     public void select(List<Option> choices) {
         Set<Option> set = new HashSet<>(choices);
@@ -23,15 +26,5 @@ public class RankedChoiceVote extends Vote {
         }
 
         selections = choices;
-    }
-
-    public List<Option> getVote() {
-        return new ArrayList<>(selections);
-    }
-
-    public SingleVote toSingleVote() {
-        SingleVote vote = new SingleVote(this.race, this.voterName);
-        vote.select(selections.get(0));
-        return vote;
     }
 }
