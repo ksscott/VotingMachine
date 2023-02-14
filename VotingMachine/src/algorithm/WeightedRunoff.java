@@ -2,22 +2,23 @@ package algorithm;
 
 import model.Option;
 import model.Race;
+import model.vote.RankedVote;
 import model.vote.WeightedVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class WeightedRunoff extends EvalAlgorithm<WeightedVote> {
+public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
 
     private Map<Option, Double> standings;
-    private Set<WeightedVote> voters;
+    private Set<RankedVote> voters;
 
     public WeightedRunoff(Race race) {
         super(race);
     }
 
     @Override
-    public Set<Option> evaluate(Set<WeightedVote> votes) {
+    public Set<Option> evaluate(Set<RankedVote> votes) {
         initializeStandings();
         System.out.println("Initializing standings...");
 
@@ -75,12 +76,21 @@ public class WeightedRunoff extends EvalAlgorithm<WeightedVote> {
         // reset scores
         standings.keySet().forEach(option -> standings.put(option, 0.0));
 
-        for (WeightedVote vote : voters) {
-            vote.normalizeAcross(standings.keySet());
-            for (Option option : standings.keySet()) {
-                Double rating = vote.getNormalizedRating(option);
-                double unboxed = rating == null ? 0.0 : rating;
-                standings.put(option, standings.get(option) + unboxed);
+        for (RankedVote vote : voters) {
+            if (vote instanceof WeightedVote weightedVote) {
+                weightedVote.normalizeAcross(standings.keySet());
+                for (Option option : standings.keySet()) {
+                    Double rating = weightedVote.getNormalizedRating(option);
+                    double unboxed = rating == null ? 0.0 : rating;
+                    standings.put(option, standings.get(option) + unboxed);
+                }
+            } else {
+                for (Option option : vote.getRankings()) {
+                    if (standings.containsKey(option)) {
+                        standings.put(option, standings.get(option) + 1.0);
+                        break;
+                    }
+                }
             }
         }
     }
