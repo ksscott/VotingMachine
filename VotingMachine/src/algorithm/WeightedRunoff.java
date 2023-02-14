@@ -12,6 +12,7 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
 
     private Map<Option, Double> standings;
     private Set<RankedVote> voters;
+    private boolean multiRound = true; // True for "instant runoff" style; false for a single-round count
 
     public WeightedRunoff(Race race) {
         super(race);
@@ -23,14 +24,30 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
         System.out.println("Initializing standings...");
 
         this.voters = votes;
-
         Set<Option> winners = null;
-        while (winners == null) {
-            System.out.println("Evaluating round...");
-            winners = evaluateRound();
+
+        if (multiRound) {
+            while (winners == null) {
+                System.out.println("Evaluating round...");
+                winners = evaluateRound();
+            }
+        } else {
+            winners = determineWinners();
         }
 
         return winners;
+    }
+
+    /**
+     * Change evaluation method between single-round and multi-round race.
+     * In a multi-round race, votes for losing candidates are re-allocated each round.
+     * WeightedVotes are re-normalized each round to preserve voting power.
+     *
+     * @param multiRound <code>true</code> for an Instant Runoff style race,
+     *                   <code>false</code> to evaluate in a single round of vote counting
+     */
+    public void setInstantRunoff(boolean multiRound) {
+        this.multiRound = multiRound;
     }
 
     private void initializeStandings() {
@@ -56,8 +73,8 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
         // find candidate(s) with lowest score
         Set<Option> losingCandidates = losers();
 
-        // if no losers, return all winners
-        if (losingCandidates == null) {
+        // if no losers / all losers, return all winners
+        if (losingCandidates == null || losingCandidates.size() == standings.keySet().size()) {
             return standings.keySet();
         }
 
@@ -103,6 +120,18 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
                 .filter(candidate -> standings.get(candidate) > scoreToWin)
                 .findAny()
                 .orElse(null);
+    }
+
+    private Set<Option> determineWinners() {
+        Double winningScore = standings.values()
+                .stream()
+                .max(Double::compareTo)
+                .orElse(-1.0); // no winners
+        // Assume the winning score exists
+        return  standings.keySet()
+                .stream()
+                .filter(option -> winningScore.equals(standings.get(option)))
+                .collect(Collectors.toSet());
     }
 
     private Set<Option> losers() {

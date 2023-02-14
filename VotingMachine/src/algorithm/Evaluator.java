@@ -18,7 +18,7 @@ public class Evaluator {
 	}
 
 	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<RankedVote> election) {
-		return evaluateElection(election, DescendingPoints::new);
+		return evaluateElection(election, WeightedRunoff::new);
 	}
 
 	public static <V extends Vote> Map<Race,Set<Option>> evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
