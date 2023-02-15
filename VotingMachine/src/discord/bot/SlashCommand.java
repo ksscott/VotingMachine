@@ -40,7 +40,10 @@ public enum SlashCommand {
             (event, session) -> {
                 session.startElection();
 
-                String message = "New poll started! Type /vote to vote. Type '/games' to see a list of options.";
+                String message = "New poll started! \n" +
+                        "Type /vote to vote for a list of games. \n" +
+                        "Type /rate to build a vote by rating one game at a time. \n" +
+                        "Type /games to see a list of options.";
 
                 event.reply(message).queue();
             }),
@@ -72,6 +75,28 @@ public enum SlashCommand {
 
                 String namesList = gamesList.stream().map(Game::getTitle).collect(Collectors.joining("\n"));
                 event.reply("Voted for game: " + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
+                event.getChannel().sendMessage(username + " voted.").queue();
+            }),
+    RATE("rate", "Build a weighted vote one game at at time; accepts integers",
+            data -> {
+                data.addOption(OptionType.STRING, "game", "Game to rate", true);
+                data.addOption(OptionType.INTEGER, "rating", "Integer rating for this game", true);
+                return data;
+            },
+            (event, session) -> {
+                String username = event.getUser().getName();
+                String gameString = event.getOption("game").getAsString();
+                Game game = Game.interpret(gameString).orElse(null);
+                Integer rating = event.getOption("rating").getAsInt();
+
+                try {
+                    session.rate(username, game, rating);
+                } catch (IllegalArgumentException | IllegalStateException e) {
+                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
+                    return;
+                }
+
+                event.reply("Rated game: " + game.getTitle() + " -> " + rating)/*.setEphemeral(true)*/.queue();
                 event.getChannel().sendMessage(username + " voted.").queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",

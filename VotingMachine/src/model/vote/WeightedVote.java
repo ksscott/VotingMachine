@@ -96,6 +96,15 @@ public class WeightedVote extends RankedVote {
         }
     }
 
+    @Override
+    public String toString() {
+        String ratingsString = "";
+        for (Option option : ratings.keySet()) {
+            ratingsString += "("+option.name()+","+ratings.get(option)+") ";
+        }
+        return "WeightedVote{ " + ratingsString + "}";
+    }
+
     private static double pointsForRank(int rank) {
         return 2.0/((double) (rank+1)); // 1->1.0, 2->0.67, 3->0.5, 4->0.4, 5->0.33, ...
     }

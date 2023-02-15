@@ -12,7 +12,8 @@ import java.util.stream.Collectors;
 
 public class Session { // TODO threading issues?
     private Election<RankedVote> election;
-    private Race race;
+    private Race race; // FIXME ?
+    private Map<String,Map<Option,Integer>> voterRatings;
 
     public void startElection() {
         Set<Option> options = Game.shortList()
@@ -23,6 +24,7 @@ public class Session { // TODO threading issues?
         race = new Race("Game", options);
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
+        voterRatings = new HashMap<>();
     }
 
     public void addVote(RankedVote vote) {
@@ -41,8 +43,8 @@ public class Session { // TODO threading issues?
 
         SimpleRankingVote vote = new SimpleRankingVote(race, voterName);
         vote.select(orderedChoices);
-//        addVote(vote);
-        addVote(WeightedVote.fromVote(vote)); // FIXME Force a weighting
+//        addVote(vote); // FIXME
+        addVote(WeightedVote.fromVote(vote)); // Force a weighting
     }
 
     public void addVote(String voterName, String... gameStrings) {
@@ -57,6 +59,18 @@ public class Session { // TODO threading issues?
         addVote(voterName, games);
     }
 
+    public void rate(String voterName, Game game, int rating) {
+        if (game == null) { throw new IllegalArgumentException("Game not recognized"); }
+
+        Map<Option, Integer> ratings = this.voterRatings.get(voterName);
+        if (ratings == null) {
+            ratings = new HashMap<>();
+            voterRatings.put(voterName, ratings);
+        }
+        ratings.put(new Option(game.getTitle()), rating);
+        updateRatings(voterName);
+    }
+
     public Set<Option> pickWinner() {
         requireElection();
 
@@ -66,5 +80,21 @@ public class Session { // TODO threading issues?
 
     private void requireElection() {
         if (election == null) { throw new IllegalStateException("Start an election first"); }
+    }
+
+    private void updateRatings(String voterName) {
+        requireElection();
+        Map<Option, Integer> ratings = voterRatings.get(voterName);
+
+        if (ratings == null) {
+            ratings = new HashMap<>();
+            voterRatings.put(voterName, ratings);
+        }
+
+        WeightedVote vote = new WeightedVote(race, voterName);
+        for (Option option : ratings.keySet()) {
+            vote.rate(option, ratings.get(option).doubleValue());
+        }
+        addVote(vote);
     }
 }
