@@ -75,13 +75,6 @@ public class WeightedVote extends RankedVote {
         normalizedUpdated = true;
     }
 
-    public SimpleRankingVote toSimpleRankingVote() {
-        SimpleRankingVote vote = new SimpleRankingVote(this.race, this.voterName);
-        vote.select(getRankings());
-        return vote;
-    }
-
-
     public static WeightedVote rateDescending(RankedVote vote) {
         WeightedVote result = new WeightedVote(vote.race, vote.voterName);
         int rank = 1;
@@ -98,7 +91,7 @@ public class WeightedVote extends RankedVote {
         } else if (vote instanceof RankedVote rv) {
             return rateDescending(rv);
         } else {
-            SimpleRankingVote srv = SimpleRankingVote.fromSingleVote(vote.toSingleVote());
+            SimpleRankingVote srv = SimpleRankingVote.fromVote(vote.toSingleVote());
             return rateDescending(srv);
         }
     }

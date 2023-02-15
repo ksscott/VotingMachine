@@ -2,12 +2,12 @@ package algorithm;
 
 import model.Option;
 import model.Race;
-import model.vote.SimpleRankingVote;
+import model.vote.RankedVote;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
+public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
     // WARNING: This method has a problem where voting [A,B,C] and [D]
     // gives fewer points to D than A because vote 1 puts B & C over D
@@ -19,8 +19,9 @@ public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
         super(race);
     }
 
+    /** Uses {@link RankedVote#getRankings()} */
     @Override
-    public Set<Option> evaluate(Set<SimpleRankingVote> votes) {
+    public Set<Option> evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
         simulateMatchups(votes, new ArrayList<>(race.options()));
@@ -30,7 +31,7 @@ public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
         return determineWinners();
     }
 
-    protected void initializeStandings() {
+    private void initializeStandings() {
         simulatedHeadToHeads = new HashMap<>();
         for (Option candidate : race.options()) {
             simulatedHeadToHeads.put(candidate, new HashMap<>());
@@ -38,7 +39,7 @@ public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
         }
     }
 
-    private void simulateMatchups(Set<SimpleRankingVote> votes, List<Option> candidates) {
+    private void simulateMatchups(Set<RankedVote> votes, List<Option> candidates) {
         // iterate over candidate pairs
         for (int i = 0; i< candidates.size(); i++) {
             Option candidate = candidates.get(i);
@@ -47,7 +48,7 @@ public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
                 ScorePair score = new ScorePair();
 
                 // iterate over votes
-                for (SimpleRankingVote vote : votes) {
+                for (RankedVote vote : votes) {
                     Option winner = score(candidate, other, vote);
                     if (candidate.equals(winner)) {
                         score.left = score.left + 1;
@@ -62,7 +63,7 @@ public class CopelandMethod extends EvalAlgorithm<SimpleRankingVote> {
         }
     }
 
-    private Option score(Option candidate, Option other, SimpleRankingVote vote) {
+    private Option score(Option candidate, Option other, RankedVote vote) {
         List<Option> choices = vote.getRankings();
 
         int candidateRank = choices.indexOf(candidate);

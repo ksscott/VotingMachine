@@ -28,9 +28,13 @@ public class SimpleRankingVote extends RankedVote {
         selections = choices;
     }
 
-    public static SimpleRankingVote fromSingleVote(SingleVote singleVote) {
-        SimpleRankingVote vote = new SimpleRankingVote(singleVote.race, singleVote.voterName);
-        vote.select( Collections.singletonList(singleVote.getVote()));
-        return vote;
+    public static SimpleRankingVote fromVote(Vote vote) {
+        SimpleRankingVote srv = new SimpleRankingVote(vote.race, vote.voterName);
+        if (vote instanceof RankedVote rv) {
+            srv.select(rv.getRankings());
+        } else {
+           srv.select(Collections.singletonList(vote.toSingleVote().getVote()));
+        }
+        return srv;
     }
 }
