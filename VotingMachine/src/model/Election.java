@@ -21,6 +21,7 @@ public class Election<V extends Vote> {
 		if (!ballot.races().contains(race)) {
 			throw new IllegalArgumentException("Race does not appear on this ballot");
 		}
+		this.votes.get(race).remove(vote);
 		this.votes.get(race).add(vote);
 	}
 
