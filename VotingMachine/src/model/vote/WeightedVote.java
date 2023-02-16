@@ -1,7 +1,8 @@
 package model.vote;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import model.Option;
-import model.Race;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -9,13 +10,15 @@ import java.util.stream.Collectors;
 
 public class WeightedVote extends RankedVote {
 
-    Map<Option,Double> ratings;
-    Map<Option,Double> normalizedRatings;
-    Set<Option> filter;
+    @JsonProperty
+    private Map<Option,Double> ratings;
+    private Map<Option,Double> normalizedRatings;
+    private Set<Option> filter;
     private boolean normalizedUpdated;
 
-    public WeightedVote(Race race, String voterName) {
-        super(race, voterName);
+    @JsonCreator
+    public WeightedVote(@JsonProperty("voterName") String voterName) {
+        super(voterName);
         this.ratings = new HashMap<>();
         this.normalizedRatings = new HashMap<>();
         filter = new HashSet<>();
@@ -23,9 +26,6 @@ public class WeightedVote extends RankedVote {
     }
 
     public void rate(Option option, Double rating) {
-        if (!race.options().contains(option)) {
-            throw new IllegalArgumentException("Option does not appear in this race");
-        }
         ratings.put(option, rating);
         normalizedUpdated = false;
         filter = new HashSet<>();
@@ -76,7 +76,7 @@ public class WeightedVote extends RankedVote {
     }
 
     public static WeightedVote rateDescending(RankedVote vote) {
-        WeightedVote result = new WeightedVote(vote.race, vote.voterName);
+        WeightedVote result = new WeightedVote(vote.voterName);
         int rank = 1;
         for (Option option : vote.getRankings()) {
             double points = pointsForRank(rank++);

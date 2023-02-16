@@ -109,6 +109,30 @@ public enum SlashCommand {
                                 .collect(Collectors.joining(", and "));
                 event.reply("The winner is: " + winnersString).queue();
             }),
+    SAVE("save", "Record your current vote as your default preferred vote for future elections",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getName();
+                try {
+                    session.saveDefaultVote(username);
+                } catch (Exception e) {
+                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
+                    return;
+                }
+                event.reply("Default vote saved for " + username).queue();
+            }),
+    LOAD("load", "Load your default preferred vote",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getName();
+                try {
+                    session.loadDefaultVote(username);
+                } catch (Exception e) {
+                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
+                    return;
+                }
+                event.reply("Default vote loaded for " + username).queue();
+            }),
     HELP("help", "Lists out available commands",
             data -> data,
             (event, session) -> {

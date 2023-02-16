@@ -1,15 +1,13 @@
 package model.vote;
 
-import model.Race;
-
+import java.io.Serializable;
 import java.util.*;
 
-public abstract class Vote {
-	public final Race race;
+public abstract class Vote implements Serializable {
+
 	public final String voterName;
 	
-	public Vote(Race race, String voterName) {
-		this.race = race;
+	public Vote(String voterName) {
 		this.voterName = voterName;
 	}
 
@@ -19,11 +17,11 @@ public abstract class Vote {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Vote vote)) return false;
-		return Objects.equals(race, vote.race) && Objects.equals(voterName, vote.voterName);
+		return Objects.equals(voterName, vote.voterName);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(race, voterName);
+		return Objects.hash(voterName);
 	}
 }

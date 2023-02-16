@@ -21,14 +21,12 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
     @Override
     public Set<Option> evaluate(Set<RankedVote> votes) {
         initializeStandings();
-        System.out.println("Initializing standings...");
 
         this.voters = votes;
         Set<Option> winners = null;
 
         if (multiRound) {
             while (winners == null) {
-                System.out.println("Evaluating round...");
                 winners = evaluateRound();
             }
         } else {
@@ -80,7 +78,6 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
 
         // WARNING: if there's a tie for loser, this removes ALL losers
         for (Option loser : losingCandidates) {
-//            System.out.println("Removing loser: " + loser.name);
             // drop the candidate
             standings.remove(loser);
         }

@@ -1,25 +1,16 @@
 package model.vote;
 
 import model.Option;
-import model.Race;
 
 public class SingleVote extends Vote {
     private Option selection;
 
-    public SingleVote(Race race, String voterName) { super(race, voterName); }
+    public SingleVote(String voterName) { super(voterName); }
 
     @Override
     public SingleVote toSingleVote() { return this; }
 
-    public void select(Option choice) {
-        if (!race.options().contains(choice)) {
-            throw new IllegalArgumentException("Invalid choice");
-        }
+    public void select(Option choice) { selection = choice; }
 
-        selection = choice;
-    }
-
-    public Option getVote() {
-        return selection;
-    }
+    public Option getVote() { return selection; }
 }
