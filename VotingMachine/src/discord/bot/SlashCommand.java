@@ -133,6 +133,30 @@ public enum SlashCommand {
                 }
                 event.reply("Default vote loaded for " + username).queue();
             }),
+    CLEAR("clear", "Clear your current vote in this election",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getName();
+                try {
+                    session.clearCurrentVote(username);
+                } catch (Exception e) {
+                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
+                    return;
+                }
+                event.reply("Cleared current vote for " + username).queue();
+            }),
+    CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getName();
+                try {
+                    session.clearDefaultVote(username);
+                } catch (Exception e) {
+                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
+                    return;
+                }
+                event.reply("Cleared default vote for " + username).queue();
+            }),
     HELP("help", "Lists out available commands",
             data -> data,
             (event, session) -> {

@@ -31,4 +31,11 @@ public class Election<V extends Vote> {
 		}
 		return Collections.unmodifiableSet(votes.get(race));
 	}
+
+	public boolean removeVote(Race race, V vote) {
+		if (!ballot.races().contains(race)) {
+			throw new IllegalArgumentException("Race does not appear on this ballot");
+		}
+		return votes.get(race).remove(vote);
+	}
 }

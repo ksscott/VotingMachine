@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 public class Session { // TODO threading issues?
     private Election<RankedVote> election;
     private Race race; // FIXME ?
-    private Map<String,Map<Option,Integer>> voterRatings;
 
     public void startElection() {
         Set<Option> options = Game.shortList()
@@ -28,7 +27,6 @@ public class Session { // TODO threading issues?
         race = new Race("Game", options);
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
-        voterRatings = new HashMap<>();
     }
 
     public void addVote(RankedVote vote) {
@@ -68,13 +66,13 @@ public class Session { // TODO threading issues?
 
         if (game == null) { throw new IllegalArgumentException("Game not recognized"); }
 
-        Map<Option, Integer> ratings = this.voterRatings.get(voterName);
-        if (ratings == null) {
-            ratings = new HashMap<>();
-            voterRatings.put(voterName, ratings);
+        Vote vote = getVote(voterName);
+        if (vote == null || !(vote instanceof WeightedVote)) {
+            vote = new WeightedVote(voterName);
         }
-        ratings.put(new Option(game.getTitle()), rating);
-        updateRatings(voterName);
+        ((WeightedVote) vote).rate(new Option(game.getTitle()), (double) rating);
+
+        addVote((RankedVote) vote);
     }
 
     public Set<Option> pickWinner() {
@@ -90,27 +88,9 @@ public class Session { // TODO threading issues?
     public void saveDefaultVote(String voterName) throws IOException {
         requireElection();
 
-        Vote vote = election.getVotes(race)
-                .stream()
-                .filter(v -> v.voterName.equals(voterName))
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("No vote found for voter name"));
+        Vote vote = getVote(voterName);
 
-        Path path = Paths.get(DIR_PATH + FILE_NAME);
-
-        List<Vote> recordedVotes = new ArrayList<>();
-        if (Files.exists(path)) {
-            recordedVotes = Files.readAllLines(path)
-                    .stream()
-                    .map(this::deserializeVote)
-                    .filter(v -> !vote.equals(v))
-                    .collect(Collectors.toList());
-        }
-        recordedVotes.add(vote);
-
-        Files.createDirectories(Path.of(DIR_PATH));
-        Files.deleteIfExists(path);
-        Files.write(path, serializeVotes(recordedVotes).getBytes());
+        replaceDefaultVote(voterName, vote);
     }
 
     public void loadDefaultVote(String voterName) throws IOException {
@@ -127,23 +107,57 @@ public class Session { // TODO threading issues?
                 .orElseThrow(() -> new RuntimeException("Vote not found for " + voterName));
 
         addVote((RankedVote) vote); // FIXME
+    }
 
+    public void clearCurrentVote(String voterName) {
+        requireElection();
+
+        RankedVote vote = election.getVotes(race)
+                .stream()
+                .filter(v -> v.voterName.equals(voterName))
+                .findAny()
+                .orElse(null);
+
+        election.removeVote(race, vote);
+    }
+
+    public void clearDefaultVote(String voterName) throws IOException {
+        replaceDefaultVote(voterName, null);
+    }
+
+    private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
+        Path path = Paths.get(DIR_PATH + FILE_NAME);
+
+        List<Vote> recordedVotes = new ArrayList<>();
+        if (Files.exists(path)) {
+            recordedVotes = Files.readAllLines(path)
+                    .stream()
+                    .map(this::deserializeVote)
+                    .filter(Objects::nonNull)
+                    .filter(v -> !v.voterName.equals(voterName))
+                    .collect(Collectors.toList());
+        }
+        if (vote != null) {
+            recordedVotes.add(vote);
+        }
+
+        Files.createDirectories(Path.of(DIR_PATH));
+        Files.deleteIfExists(path);
+        Files.write(path, serializeVotes(recordedVotes).getBytes());
+    }
+
+    private Vote getVote(String voterName) {
+        return election.getVotes(race)
+                .stream()
+                .filter(v -> v.voterName.equals(voterName))
+                .findAny()
+                .orElse(null);
     }
 
     private void requireElection() {
         if (election == null) { throw new IllegalStateException("Start an election first"); }
     }
 
-    private void updateRatings(String voterName) {
-        requireElection();
-        Map<Option, Integer> ratings = voterRatings.computeIfAbsent(voterName, k -> new HashMap<>());
-
-        WeightedVote vote = new WeightedVote(voterName);
-        for (Option option : ratings.keySet()) {
-            vote.rate(option, ratings.get(option).doubleValue());
-        }
-        addVote(vote);
-    }
     private static final List<Class> VOTE_TYPES = Arrays.asList(WeightedVote.class, SimpleRankingVote.class, SingleVote.class);
     private final ObjectMapper mapper = new ObjectMapper();
 
