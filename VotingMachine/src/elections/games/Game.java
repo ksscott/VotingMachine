@@ -71,6 +71,7 @@ public enum Game {
 		shortList.add(ASTRONEER);
 		shortList.add(BOOMERANG_FU);
 		shortList.add(CHESS);
+		shortList.add(CIVILIZATION_6);
 		shortList.add(ECO);
 		shortList.add(FACTORIO);
 		shortList.add(FOXHOLE);
