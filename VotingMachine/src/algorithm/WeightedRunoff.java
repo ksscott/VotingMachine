@@ -3,6 +3,7 @@ package algorithm;
 import model.Option;
 import model.Race;
 import model.vote.RankedVote;
+import model.vote.Vote;
 import model.vote.WeightedVote;
 
 import java.util.*;
@@ -22,11 +23,19 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
     public Set<Option> evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
-        this.voters = votes;
         Set<Option> winners = null;
+        this.voters = votes;
 
+        voters.stream()
+                .map(Vote::getVetoes)
+                .flatMap(Set::stream)
+                .forEach(standings::remove);
+
+        int round = 1;
         if (multiRound) {
             while (winners == null) {
+                System.out.println();
+                System.out.println("EVALUATING ROUND: " + round++);
                 winners = evaluateRound();
             }
         } else {
@@ -106,6 +115,9 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
                     }
                 }
             }
+        }
+        for (Option option : standings.keySet()) {
+            System.out.println(option.getName() + ": " + standings.get(option));
         }
     }
 

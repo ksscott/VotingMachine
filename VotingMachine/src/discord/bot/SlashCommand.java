@@ -99,6 +99,25 @@ public enum SlashCommand {
                 event.reply("Rated game: " + game.getTitle() + " -> " + rating)/*.setEphemeral(true)*/.queue();
                 event.getChannel().sendMessage(username + " voted.").queue();
             }),
+    VETO("veto", "Cause a game to automatically lose the election",
+            data -> data.addOption(OptionType.STRING, "game", "The game to forbid", true),
+            (event, session) -> {
+                String gameString = event.getOption("game").getAsString();
+                Game game = Game.interpret(gameString).orElse(null);
+                if (game == null) {
+                    event.reply("Game not recognized").setEphemeral(true).queue();
+                    return;
+                }
+
+                String username = event.getUser().getName();
+                try {
+                    session.veto(username, game);
+                } catch (Exception e) {
+                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
+                    return;
+                }
+                event.reply(username + " vetoed the game: " + game.getTitle()).queue();
+            }),
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,
             (event, session) -> {

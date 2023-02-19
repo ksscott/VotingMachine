@@ -75,6 +75,16 @@ public class Session { // TODO threading issues?
         addVote((RankedVote) vote);
     }
 
+    public void veto(String voterName, Game game) {
+        requireElection();
+
+        Vote vote = getVote(voterName);
+        if (vote == null) {
+            vote = new WeightedVote(voterName);
+        }
+        vote.veto(new Option(game.getTitle()));
+    }
+
     public Set<Option> pickWinner() {
         requireElection();
 

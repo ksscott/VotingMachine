@@ -3,6 +3,7 @@ package algorithm;
 import model.Option;
 import model.Race;
 import model.vote.RankedVote;
+import model.vote.Vote;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,7 +25,17 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
     public Set<Option> evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
-        simulateMatchups(votes, new ArrayList<>(race.options()));
+        Set<Option> vetoes = votes
+                .stream()
+                .map(Vote::getVetoes)
+                .flatMap(Set::stream)
+                .collect(Collectors.toSet());
+        List<Option> candidates = race.options()
+                .stream()
+                .filter(o -> !vetoes.contains(o))
+                .collect(Collectors.toList());
+
+        simulateMatchups(votes, candidates);
 
         calculateCopelandScores();
 
@@ -35,8 +46,8 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
         simulatedHeadToHeads = new HashMap<>();
         for (Option candidate : race.options()) {
             simulatedHeadToHeads.put(candidate, new HashMap<>());
-            copelandScores = new HashMap<>();
         }
+        copelandScores = new HashMap<>();
     }
 
     private void simulateMatchups(Set<RankedVote> votes, List<Option> candidates) {

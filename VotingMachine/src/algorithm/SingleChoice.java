@@ -2,12 +2,10 @@ package algorithm;
 
 import model.Option;
 import model.Race;
+import model.vote.SingleVote;
 import model.vote.Vote;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class SingleChoice extends EvalAlgorithm<Vote> {
 
@@ -20,12 +18,15 @@ public class SingleChoice extends EvalAlgorithm<Vote> {
         Map<Option, Integer> count = new HashMap<>();
         race.options().forEach(option -> count.put(option, 0));
 
-        for (Vote vote : votes) {
-            Option choice = vote.toSingleVote().getVote();
-            if (choice != null) {
-                count.put(choice, count.get(choice)+1);
-            }
-        }
+        votes.stream()
+                .map(Vote::toSingleVote)
+                .map(SingleVote::getVote)
+                .filter(Objects::nonNull)
+                .forEach(o -> count.put(o, count.get(o)+1));
+        votes.stream()
+                .map(Vote::getVetoes)
+                .flatMap(Set::stream)
+                .forEach(count::remove);
 
         Set<Option> winners = new HashSet<>();
         int highest = 0;
