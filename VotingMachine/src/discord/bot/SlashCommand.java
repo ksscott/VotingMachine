@@ -11,7 +11,6 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -32,8 +31,7 @@ public enum SlashCommand {
                     .map(Game::getTitle)
                     .sorted()
                     .collect(Collectors.joining("\n"));
-            event.reply(stringList).setEphemeral(true) // reply or acknowledge
-                    .queue();
+            event.reply(stringList).setEphemeral(true).queue();
         }),
     NEW_POLL("new", "Begins a new election",
             data -> data,
@@ -66,12 +64,7 @@ public enum SlashCommand {
                         .map(Optional::get)
                         .collect(Collectors.toList());
 
-                try {
-                    session.addVote(username, gamesList);
-                } catch (IllegalArgumentException | IllegalStateException e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.addVote(username, gamesList);
 
                 String namesList = gamesList.stream().map(Game::getTitle).collect(Collectors.joining("\n"));
                 event.reply("Voted for game: " + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
@@ -89,12 +82,7 @@ public enum SlashCommand {
                 Game game = Game.interpret(gameString).orElse(null);
                 Integer rating = event.getOption("rating").getAsInt();
 
-                try {
-                    session.rate(username, game, rating);
-                } catch (IllegalArgumentException | IllegalStateException e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.rate(username, game, rating);
 
                 event.reply("Rated game: " + game.getTitle() + " -> " + rating)/*.setEphemeral(true)*/.queue();
             }),
@@ -109,12 +97,7 @@ public enum SlashCommand {
                 }
 
                 String username = event.getUser().getName();
-                try {
-                    session.veto(username, game);
-                } catch (Exception e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.veto(username, game);
                 event.reply(username + " vetoed the game: " + game.getTitle()).queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
@@ -131,48 +114,28 @@ public enum SlashCommand {
             data -> data,
             (event, session) -> {
                 String username = event.getUser().getName();
-                try {
-                    session.saveDefaultVote(username);
-                } catch (Exception e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.saveDefaultVote(username);
                 event.reply("Default vote saved for " + username).queue();
             }),
     LOAD("load", "Load your default preferred vote",
             data -> data,
             (event, session) -> {
                 String username = event.getUser().getName();
-                try {
-                    session.loadDefaultVote(username);
-                } catch (Exception e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.loadDefaultVote(username);
                 event.reply("Default vote loaded for " + username).queue();
             }),
     CLEAR("clear", "Clear your current vote in this election",
             data -> data,
             (event, session) -> {
                 String username = event.getUser().getName();
-                try {
-                    session.clearCurrentVote(username);
-                } catch (Exception e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.clearCurrentVote(username);
                 event.reply("Cleared current vote for " + username).queue();
             }),
     CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
             data -> data,
             (event, session) -> {
                 String username = event.getUser().getName();
-                try {
-                    session.clearDefaultVote(username);
-                } catch (Exception e) {
-                    event.reply("Error: " + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
+                session.clearDefaultVote(username);
                 event.reply("Cleared default vote for " + username).queue();
             }),
     HELP("help", "Lists out available commands",
@@ -188,12 +151,12 @@ public enum SlashCommand {
     public final String slashText;
     public final String description;
     private final UnaryOperator<SlashCommandData> optionsOperator;
-    private final BiConsumer<SlashCommandInteractionEvent, Session> eventHandler;
+    private final EventHandler eventHandler;
 
     SlashCommand(String slashText,
                  String description,
                  UnaryOperator<SlashCommandData> optionsOperator,
-                 BiConsumer<SlashCommandInteractionEvent, Session> eventHandler) {
+                 EventHandler eventHandler) {
         this.slashText = slashText;
         this.description = description;
         this.optionsOperator = optionsOperator;
@@ -207,9 +170,24 @@ public enum SlashCommand {
     public static void handle(SlashCommandInteractionEvent event, Session session) {
         for (SlashCommand command : values()) {
             if (command.slashText.equalsIgnoreCase(event.getName())) {
-                command.eventHandler.accept(event, session);
+                try {
+                    command.eventHandler.accept(event, session);
+                } catch (Exception e) {
+                    event.reply("Command encountered an error: \n" + e.getMessage()).setEphemeral(true).queue();
+                }
                 break;
             }
         }
+    }
+
+    /**
+     * An implementation of {@link java.util.function.BiConsumer} that doesn't handle its own exceptions.
+     * Useful for declaring throwing lambda expressions.
+     * <p>
+     * Example EventHandler lambda expression:
+     * <code>(event, session) -> { event.reply("Command received").queue(); }</code>
+     */
+    public interface EventHandler {
+        void accept(SlashCommandInteractionEvent event, Session session) throws Exception;
     }
 }
