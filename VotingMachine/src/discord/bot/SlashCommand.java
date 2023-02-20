@@ -97,7 +97,6 @@ public enum SlashCommand {
                 }
 
                 event.reply("Rated game: " + game.getTitle() + " -> " + rating)/*.setEphemeral(true)*/.queue();
-                event.getChannel().sendMessage(username + " voted.").queue();
             }),
     VETO("veto", "Cause a game to automatically lose the election",
             data -> data.addOption(OptionType.STRING, "game", "The game to forbid", true),

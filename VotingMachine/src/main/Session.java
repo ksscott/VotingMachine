@@ -2,9 +2,13 @@ package main;
 
 import algorithm.Evaluator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elections.games.Game;
-import model.*;
+import model.Ballot;
+import model.Election;
+import model.Option;
+import model.Race;
 import model.vote.*;
 
 import java.io.IOException;
@@ -15,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Session { // TODO threading issues?
-    private Election<RankedVote> election;
+    private Election<Vote> election;
     private Race race; // FIXME ?
 
     public void startElection() {
@@ -122,7 +126,7 @@ public class Session { // TODO threading issues?
     public void clearCurrentVote(String voterName) {
         requireElection();
 
-        RankedVote vote = election.getVotes(race)
+        Vote vote = election.getVotes(race)
                 .stream()
                 .filter(v -> v.voterName.equals(voterName))
                 .findAny()
@@ -172,6 +176,8 @@ public class Session { // TODO threading issues?
     private final ObjectMapper mapper = new ObjectMapper();
 
     private Vote deserializeVote(String input) throws RuntimeException {
+        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
+        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
         try {
             for (Class type : VOTE_TYPES) {
                 Vote vote = (Vote) mapper.readValue(input, type);

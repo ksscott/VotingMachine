@@ -1,12 +1,15 @@
 package algorithm;
 
+import model.Ballot;
+import model.Election;
+import model.Option;
+import model.Race;
+import model.vote.Vote;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import model.*;
-import model.vote.*;
 
 public class Evaluator {
 	
@@ -17,7 +20,7 @@ public class Evaluator {
 		return evaluateElection(election, SingleChoice::new);
 	}
 
-	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<RankedVote> election) {
+	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<Vote> election) {
 		return evaluateElection(election, WeightedRunoff::new);
 	}
 

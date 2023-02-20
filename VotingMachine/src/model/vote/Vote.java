@@ -3,13 +3,16 @@ package model.vote;
 import model.Option;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 public abstract class Vote implements Serializable {
 
 	public final String voterName;
-	private Set<Option> vetoes;
-	
+	protected Set<Option> vetoes;
+
 	public Vote(String voterName) {
 		this.voterName = voterName;
 		this.vetoes = new HashSet<>();

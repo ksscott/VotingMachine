@@ -9,10 +9,10 @@ import model.vote.WeightedVote;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
+public class WeightedRunoff extends EvalAlgorithm<Vote> {
 
     private Map<Option, Double> standings;
-    private Set<RankedVote> voters;
+    private Set<Vote> voters;
     private boolean multiRound = true; // True for "instant runoff" style; false for a single-round count
 
     public WeightedRunoff(Race race) {
@@ -20,8 +20,8 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
     }
 
     @Override
-    public Set<Option> evaluate(Set<RankedVote> votes) {
-        initializeStandings();
+    public Set<Option> evaluate(Set<Vote> votes) {
+        initializeStandings(race.options());
 
         Set<Option> winners = null;
         this.voters = votes;
@@ -57,13 +57,13 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
         this.multiRound = multiRound;
     }
 
-    private void initializeStandings() {
+    private void initializeStandings(Collection<Option> remainingCandidates) {
         this.standings = new HashMap<>();
-        race.options().forEach(option -> standings.put(option, 0.0));
+        remainingCandidates.forEach(option -> standings.put(option, 0.0));
     }
 
     /**
-     * @return winners, if they have yet been found, null otherwise
+     * @return winners, if they have yet been found, or else <code>null</code>>
      */
     private Set<Option> evaluateRound() {
         // assign all voters
@@ -91,36 +91,52 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
             standings.remove(loser);
         }
 
-        return null; // loop again
+        return null; // no winner yet; loop again
     }
 
     // assign unassigned voters
     private void caucus() {
         // reset scores
-        standings.keySet().forEach(option -> standings.put(option, 0.0));
+        initializeStandings(standings.keySet());
 
-        for (RankedVote vote : voters) {
-            if (vote instanceof WeightedVote weightedVote) {
-                weightedVote.normalizeAcross(standings.keySet());
-                for (Option option : standings.keySet()) {
-                    Double rating = weightedVote.getNormalizedRating(option);
-                    double unboxed = rating == null ? 0.0 : rating;
-                    standings.put(option, standings.get(option) + unboxed);
-                }
-            } else {
-                for (Option option : vote.getRankings()) {
-                    if (standings.containsKey(option)) {
-                        standings.put(option, standings.get(option) + 1.0);
-                        break;
-                    }
-                }
-            }
-        }
+        voters.forEach(this::tallyVote);
+
         for (Option option : standings.keySet()) {
-            System.out.println(option.getName() + ": " + standings.get(option));
+            System.out.println(option.name() + ": " + standings.get(option));
         }
     }
 
+    /**
+     * Distribute the voting power of the given vote to the remaining candidates.
+     * Each vote is given a total weight of 1.0
+     * @param vote The vote to be recorded
+     */
+    private void tallyVote(Vote vote) {
+        if (vote instanceof WeightedVote weightedVote) {
+            weightedVote.normalizeAcross(standings.keySet());
+            for (Option option : standings.keySet()) {
+                Double rating = weightedVote.getNormalizedRating(option);
+                double unboxed = rating == null ? 0.0 : rating;
+                standings.put(option, standings.get(option) + unboxed);
+            }
+        } else if (vote instanceof RankedVote rv) {
+            for (Option option : rv.getRankings()) {
+                if (standings.containsKey(option)) {
+                    standings.put(option, standings.get(option) + 1.0);
+                    break;
+                }
+            }
+        } else {
+            Option selection = vote.toSingleVote().getVote();
+            if (standings.containsKey(selection)) {
+                standings.put(selection, standings.get(selection) + 1.0);
+            }
+        }
+    }
+
+    /**
+     * @return The {@link Option} that has a strict majority of votes; or else <code>null</code>
+     */
     private Option strictWinner() {
         double scoreToWin = voters.size() / 2.0;
 

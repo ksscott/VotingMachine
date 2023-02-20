@@ -98,11 +98,15 @@ public class WeightedVote extends RankedVote {
 
     @Override
     public String toString() {
-        String ratingsString = "";
-        for (Option option : ratings.keySet()) {
-            ratingsString += "("+option.name()+","+ratings.get(option)+") ";
-        }
-        return "WeightedVote{ " + ratingsString + "}";
+        String vetoesString = vetoes
+                .stream()
+                .map(Option::name)
+                .collect(Collectors.joining(","));
+        String ratingsString = ratings.keySet()
+                .stream()
+                .map(opt -> "(" + opt.name() + "," + ratings.get(opt) + ")")
+                .collect(Collectors.joining(","));
+        return "WeightedVote{ vetoes: {" + vetoesString + "}, ratings: {" + ratingsString + "}}";
     }
 
     private static double pointsForRank(int rank) {
