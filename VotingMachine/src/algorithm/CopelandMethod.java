@@ -3,9 +3,12 @@ package algorithm;
 import model.Option;
 import model.Race;
 import model.vote.RankedVote;
+import model.EvaluationResult;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.javatuples.*;
 
 public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
@@ -21,14 +24,17 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
     /** Uses {@link RankedVote#getRankings()} */
     @Override
-    public Set<Option> evaluate(Set<RankedVote> votes) {
+    public List<Triplet<EvaluationResult,Double,Set<Option>>> evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
         simulateMatchups(votes, new ArrayList<>(race.options()));
 
         calculateCopelandScores();
 
-        return determineWinners();
+        List<Triplet<EvaluationResult,Double,Set<Option>>> roundresults = new ArrayList<Triplet<EvaluationResult,Double,Set<Option>>>();
+        roundresults.add(Triplet.with(EvaluationResult.WINNERS, 0.0, determineWinners()));
+
+        return roundresults;
     }
 
     private void initializeStandings() {

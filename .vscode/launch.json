@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch Bot",
+            "request": "launch",
+            "mainClass": "discord.bot.Bot",
+            "projectName": "VotingMachine_910c7c7e",
+            // "args": ["MTA3Njk0NjEyNjgxMDM5ODkxMA.Gjz23n.g0vaMyeIq6FccCs6CAYW9Cu3F3ZCpvzpt82eLE"] // RustBot
+            "args": ["MTA3NzQ0MDQ4NjM5MTk0NzM4NA.GmqYlD.FrXIKVx8_JhYl_K2pQJ4rFyYbYAdb6unwX_1cI"] // Botty McBotface
+        },
+        {
+            "type": "java",
+            "name": "Launch REPL",
+            "request": "launch",
+            "mainClass": "main.REPL",
+            "projectName": "VotingMachine_910c7c7e"
+        }
+    ]
+}

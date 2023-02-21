@@ -4,6 +4,11 @@ import model.Option;
 import model.Race;
 import model.vote.RankedVote;
 import model.vote.WeightedVote;
+import model.EvaluationResult;
+import java.util.List;
+import java.util.ArrayList;
+
+import org.javatuples.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,21 +24,25 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
     }
 
     @Override
-    public Set<Option> evaluate(Set<RankedVote> votes) {
+    public List<Triplet<EvaluationResult,Double,Set<Option>>> evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
         this.voters = votes;
-        Set<Option> winners = null;
+        List<Triplet<EvaluationResult,Double,Set<Option>>> roundresults = new ArrayList<Triplet<EvaluationResult,Double,Set<Option>>>();
+        Boolean winnerfound = false;
 
         if (multiRound) {
-            while (winners == null) {
-                winners = evaluateRound();
+            while (!winnerfound) {
+                Triplet<EvaluationResult,Double,Set<Option>> roundresult = evaluateRound();
+                if (roundresult.getValue0() == EvaluationResult.WINNERS) {winnerfound = true;}
+                roundresults.add(roundresult);
             }
         } else {
-            winners = determineWinners();
+            Triplet<EvaluationResult,Double,Set<Option>> roundresult = determineWinners();
+            roundresults.add(roundresult);
         }
 
-        return winners;
+        return roundresults;
     }
 
     /**
@@ -56,33 +65,33 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
     /**
      * @return winners, if they have yet been found, null otherwise
      */
-    private Set<Option> evaluateRound() {
+    private Triplet<EvaluationResult,Double,Set<Option>> evaluateRound() {
         // assign all voters
         caucus();
 
         // if strict majority, return winner
-        Option strictWinner = strictWinner();
-        if (strictWinner != null) {
+        Pair<Double,Option> strictWinner = strictWinner();
+        if (strictWinner.getValue1() != null) {
             Set<Option> winningSet = new HashSet<>();
-            winningSet.add(strictWinner);
-            return winningSet;
+            winningSet.add(strictWinner.getValue1());
+            return Triplet.with(EvaluationResult.WINNERS, strictWinner.getValue0(), winningSet);
         }
 
         // find candidate(s) with lowest score
-        Set<Option> losingCandidates = losers();
+        Pair<Double,Set<Option>> losingCandidates = losers();
 
         // if no losers / all losers, return all winners
-        if (losingCandidates == null || losingCandidates.size() == standings.keySet().size()) {
-            return standings.keySet();
+        if (losingCandidates == null || losingCandidates.getValue1().size() == standings.keySet().size()) {
+            return Triplet.with(EvaluationResult.WINNERS, losingCandidates.getValue0(), standings.keySet());
         }
 
         // WARNING: if there's a tie for loser, this removes ALL losers
-        for (Option loser : losingCandidates) {
+        for (Option loser : losingCandidates.getValue1()) {
             // drop the candidate
             standings.remove(loser);
         }
 
-        return null; // loop again
+        return Triplet.with(EvaluationResult.LOSERS, losingCandidates.getValue0(), losingCandidates.getValue1()); // loop again
     }
 
     // assign unassigned voters
@@ -109,29 +118,29 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
         }
     }
 
-    private Option strictWinner() {
+    private Pair<Double, Option> strictWinner() {
         double scoreToWin = voters.size() / 2.0;
 
-        return standings.keySet()
+        return Pair.with(scoreToWin, standings.keySet()
                 .stream()
                 .filter(candidate -> standings.get(candidate) > scoreToWin)
                 .findAny()
-                .orElse(null);
+                .orElse(null));
     }
 
-    private Set<Option> determineWinners() {
+    private Triplet<EvaluationResult,Double,Set<Option>> determineWinners() {
         Double winningScore = standings.values()
                 .stream()
                 .max(Double::compareTo)
                 .orElse(-1.0); // no winners
         // Assume the winning score exists
-        return  standings.keySet()
+        return  Triplet.with(EvaluationResult.WINNERS, winningScore, standings.keySet()
                 .stream()
                 .filter(option -> winningScore.equals(standings.get(option)))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()));
     }
 
-    private Set<Option> losers() {
+    private Pair<Double, Set<Option>> losers() {
         double lowestScore = standings.values()
                 .stream()
                 .min(Double::compareTo)
@@ -141,6 +150,6 @@ public class WeightedRunoff extends EvalAlgorithm<RankedVote> {
                 .filter(candidate -> standings.get(candidate) <= lowestScore)
                 .collect(Collectors.toSet());
         // check for: all winners, no losers
-        return losers.size() == standings.size() ? null : losers;
+        return Pair.with(lowestScore, losers.size() == standings.size() ? null : losers);
     }
 }

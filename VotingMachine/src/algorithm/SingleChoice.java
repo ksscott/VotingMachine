@@ -3,11 +3,16 @@ package algorithm;
 import model.Option;
 import model.Race;
 import model.vote.Vote;
+import model.EvaluationResult;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+
+import org.javatuples.*;
 
 public class SingleChoice extends EvalAlgorithm<Vote> {
 
@@ -16,7 +21,7 @@ public class SingleChoice extends EvalAlgorithm<Vote> {
     }
 
     @Override
-    public Set<Option> evaluate(Set<Vote> votes) {
+    public List<Triplet<EvaluationResult,Double,Set<Option>>> evaluate(Set<Vote> votes) {
         Map<Option, Integer> count = new HashMap<>();
         race.options().forEach(option -> count.put(option, 0));
 
@@ -40,6 +45,9 @@ public class SingleChoice extends EvalAlgorithm<Vote> {
             }
         }
 
-        return winners;
+        List<Triplet<EvaluationResult,Double,Set<Option>>> roundresults = new ArrayList<Triplet<EvaluationResult,Double,Set<Option>>>();
+        roundresults.add(Triplet.with(EvaluationResult.WINNERS, 0.0, winners));
+        
+        return roundresults;
     }
 }

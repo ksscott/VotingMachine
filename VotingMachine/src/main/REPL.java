@@ -5,6 +5,9 @@ import java.util.stream.Collectors;
 
 import elections.games.Game;
 import model.Option;
+import model.EvaluationResult;
+
+import org.javatuples.*;
 
 public class REPL {
 
@@ -72,14 +75,23 @@ public class REPL {
 		}
 
 		// determine winner(s)
-		List<String> winningNames = session.pickWinner()
-				.stream()
-				.map(Option::name)
-				.sorted()
-				.collect(Collectors.toList());
+		List<Triplet<EvaluationResult,Double,Set<Option>>> roundresults = session.pickWinner();
+		StringBuffer winnersString = new StringBuffer();
+		for (Triplet<EvaluationResult,Double,Set<Option>> result : roundresults) {
+			if (result.getValue0() == EvaluationResult.WINNERS) {
+				winnersString.append("WINNERS(score>"+result.getValue1().toString()+"): " + result.getValue2().stream().map(Option::name).sorted().collect(Collectors.joining(", and "))+"\n");
+			} else {
+				winnersString.append("ELIMINATED(score<"+result.getValue1().toString()+"): " + result.getValue2().stream().map(Option::name).sorted().collect(Collectors.joining(", and "))+"\n");
+			}
+		}
+		// List<String> winningNames = session.pickWinner()
+		// 		.stream()
+		// 		.map(Option::name)
+		// 		.sorted()
+		// 		.collect(Collectors.toList());
 
 		System.out.println();
-		System.out.println("The winner is: " + String.join(", and ", winningNames));
+		System.out.println("The winner is: " + String.join(", and ", winnersString));
 
 		scanner.close();
 	}

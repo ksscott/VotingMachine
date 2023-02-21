@@ -14,6 +14,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.javatuples.*;
+
 public class Session { // TODO threading issues?
     private Election<RankedVote> election;
     private Race race; // FIXME ?
@@ -24,15 +26,15 @@ public class Session { // TODO threading issues?
                 .map(Game::getTitle)
                 .map(Option::new)
                 .collect(Collectors.toSet());
-        race = new Race("Game", options);
+        this.race = new Race("Game", options);
         Ballot ballot = new Ballot("Game to Play", race);
-        election = new Election<>(ballot);
+        this.election = new Election<>(ballot);
     }
 
     public void addVote(RankedVote vote) {
         requireElection();
 
-        election.addVote(race, vote);
+        this.election.addVote(race, vote);
     }
 
     public void addVote(String voterName, List<Game> games) {
@@ -75,10 +77,10 @@ public class Session { // TODO threading issues?
         addVote((RankedVote) vote);
     }
 
-    public Set<Option> pickWinner() {
+    public List<Triplet<EvaluationResult,Double,Set<Option>>> pickWinner() {
         requireElection();
 
-        Map<Race,Set<Option>> result = Evaluator.evaluateRankedChoice(election);
+        Map<Race,List<Triplet<EvaluationResult,Double,Set<Option>>>> result = Evaluator.evaluateRankedChoice(election);
         return result.get(race);
     }
 
@@ -93,7 +95,7 @@ public class Session { // TODO threading issues?
         replaceDefaultVote(voterName, vote);
     }
 
-    public void loadDefaultVote(String voterName) throws IOException {
+    public void loadDefaultVote(String voterName) throws RuntimeException, IOException {
         requireElection();
 
         Path path = Paths.get(DIR_PATH + FILE_NAME);
@@ -137,6 +139,7 @@ public class Session { // TODO threading issues?
                     .filter(v -> !v.voterName.equals(voterName))
                     .collect(Collectors.toList());
         }
+
         if (vote != null) {
             recordedVotes.add(vote);
         }
@@ -147,6 +150,7 @@ public class Session { // TODO threading issues?
     }
 
     private Vote getVote(String voterName) {
+        System.out.println(voterName);
         return election.getVotes(race)
                 .stream()
                 .filter(v -> v.voterName.equals(voterName))
@@ -168,14 +172,14 @@ public class Session { // TODO threading issues?
                 if (vote == null) { continue; }
                 return vote;
             }
-        } catch (JsonProcessingException dbe) {
+        } catch (Exception dbe) {
             throw new RuntimeException(dbe);
         }
 
         return null;
     }
 
-    private String serializeVotes(List<Vote> votes) {
+    private String serializeVotes(List<Vote> votes) throws IOException {
         try {
             StringJoiner joiner = new StringJoiner("\n");
             for (Vote vote : votes) {

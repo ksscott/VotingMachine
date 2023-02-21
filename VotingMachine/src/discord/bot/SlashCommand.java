@@ -3,6 +3,7 @@ package discord.bot;
 import elections.games.Game;
 import main.Session;
 import model.Option;
+import model.EvaluationResult;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -10,10 +11,14 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import org.javatuples.*;
 
 public enum SlashCommand {
 //    PING("ping", "Calculate ping of the bot", (event) -> {
@@ -102,12 +107,23 @@ public enum SlashCommand {
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,
             (event, session) -> {
-                String winnersString = session.pickWinner()
-                                .stream()
-                                .map(Option::name)
-                                .sorted()
-                                .collect(Collectors.joining(", and "));
-                event.reply("The winner is: " + winnersString).queue();
+                List<Triplet<EvaluationResult,Double,Set<Option>>> roundresults = session.pickWinner();
+
+                StringBuffer winnersString = new StringBuffer();
+                for (Triplet<EvaluationResult,Double,Set<Option>> result : roundresults) {
+                    if (result.getValue0() == EvaluationResult.WINNERS) {
+                        winnersString.append("WINNERS(score≤"+result.getValue1().toString()+"): " + result.getValue2().stream().map(Option::name).sorted().collect(Collectors.joining(", and "))+"\n");
+                    } else {
+                        winnersString.append("ELIMINATED(score<"+result.getValue1().toString()+"): " + result.getValue2().stream().map(Option::name).sorted().collect(Collectors.joining(", and "))+"\n");
+                    }
+                }
+
+                // String winnersString = session.pickWinner()
+                //                 .stream()
+                //                 .map(Option::name)
+                //                 .sorted()
+                //                 .collect(Collectors.joining(", and "));
+                event.reply("Election Results:\n" + winnersString).queue();
             }),
     SAVE("save", "Record your current vote as your default preferred vote for future elections",
             data -> data,
@@ -160,6 +176,7 @@ public enum SlashCommand {
     HELP("help", "Lists out available commands",
             data -> data,
             (event, session) -> {
+                System.out.println("help command");
                 String message = Arrays.stream(values())
                         .map(command -> "/"+command.slashText+" - "+command.description)
                         .collect(Collectors.joining("\n"));

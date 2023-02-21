@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,7 @@ public class Bot extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+        System.out.println("slashcommand");
         if (event.getUser().isBot()) {
             return; // Don't talk with other bots
         } else if (!event.getChannel().getName().equalsIgnoreCase("bot-commands")) {
@@ -47,5 +49,6 @@ public class Bot extends ListenerAdapter {
         }
 
         SlashCommand.handle(event, session);
+        System.out.println("slashcommand done");
     }
 }
