@@ -23,7 +23,7 @@ public class Session { // TODO threading issues?
     private Race race; // FIXME ?
 
     public void startElection() {
-        Set<Option> options = Game.shortList()
+        Set<Option> options = Game.shortList() // FIXME
                 .stream()
                 .map(Game::getTitle)
                 .map(Option::new)
