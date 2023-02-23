@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class WeightedVote extends RankedVote {
+public class WeightedVote extends RankedVote implements Cloneable {
 
     @JsonProperty
     private Map<Option,Double> ratings;
@@ -21,8 +21,16 @@ public class WeightedVote extends RankedVote {
         super(voterName);
         this.ratings = new HashMap<>();
         this.normalizedRatings = new HashMap<>();
-        filter = new HashSet<>();
         normalizedUpdated = false;
+        filter = new HashSet<>();
+    }
+
+    @Override
+    public WeightedVote clone() {
+        WeightedVote clone = new WeightedVote(this.voterName);
+        clone.ratings = new HashMap<>(this.ratings);
+        clone.normalizeAcross(this.filter); // preserve current normalization state
+        return clone;
     }
 
     public void rate(Option option, Double rating) {
@@ -35,7 +43,7 @@ public class WeightedVote extends RankedVote {
     public List<Option> getRankings() {
         return ratings.keySet()
                 .stream()
-                .sorted((o1, o2) -> Double.compare(ratings.get(o1), ratings.get(o2)))
+                .sorted((o1, o2) -> Double.compare(ratings.get(o2), ratings.get(o1)))
                 .collect(Collectors.toList());
     }
 
@@ -94,6 +102,49 @@ public class WeightedVote extends RankedVote {
             SimpleRankingVote srv = SimpleRankingVote.fromVote(vote.toSingleVote());
             return rateDescending(srv);
         }
+    }
+
+    /**
+     * In the event that the given vote "lost" a {@link model.Race race} to some degree,
+     * this method measures the amount of the vote that was "wasted" or stifled.
+     * <br>
+     * Specifically, that is the normalized portion of this vote that was spent on
+     * each option that the given vote preferred over the winner.
+     * <br>
+     * If the given vote voted against the winner (i.e. gave it a negative rating),
+     * that rating is included in the vote's unspent weight.
+     * A {@link SimpleRankingVote} gives all its weight to its highest-rated option.
+     *
+     * FIXME need to handle tied ratings
+     *
+     * @param vote
+     * @param winner The winning option in a recently completed {@link model.Race race}.
+     * @return a mapping of unspent weightings for each preferred candidate.
+     * These unspent weights are normalized, and should add to at most <code>1.0</code>.
+     */
+    public static Map<Option,Double> unspentWeight(Vote vote, Option winner) {
+        Map<Option,Double> unspent = new HashMap<>();
+        if (vote instanceof WeightedVote wv) {
+            WeightedVote weightedVote = wv.clone(); // Don't modify state of the original vote
+            weightedVote.normalizeAcross(weightedVote.ratings.keySet()); // Remove normalization filter
+            for (Option option : weightedVote.getRankings()) { // in decreasing order of preference
+                Double unspentPortion = weightedVote.getNormalizedRating(option);
+                if (winner.equals(option)) {
+                    if (unspentPortion < 0.0) { // voted against option
+                        // voting against winner is considered "unspent"
+                        unspent.put(option, unspentPortion);
+                    }
+                    break; // finished; remaining options are considered "spent"
+                }
+                unspent.put(option, unspentPortion);
+            }
+        } else {
+            Option chosen = vote.toSingleVote().getVote();
+            if (chosen != null && !chosen.equals(winner)) {
+                unspent.put(chosen, 1.0);
+            }
+        }
+        return unspent;
     }
 
     @Override

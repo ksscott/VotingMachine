@@ -97,8 +97,16 @@ public class Session { // TODO threading issues?
     }
 
     private static final String DIR_PATH = "./data/";
-    private static final String FILE_NAME = "votes.txt";
+    private static final String VOTES_FILE_NAME = "votes.txt";
+    private static final String UNSPENT_FILE_NAME = "unspent.txt";
 
+    /**
+     * Records the given voter's current vote in this election as their "default" vote.
+     * A voter's default vote can be {@link Session#loadDefaultVote(String) loaded} for use
+     * in future elections.
+     * @param voterName
+     * @throws IOException
+     */
     public void saveDefaultVote(String voterName) throws IOException {
         requireElection();
 
@@ -107,10 +115,16 @@ public class Session { // TODO threading issues?
         replaceDefaultVote(voterName, vote);
     }
 
+    /**
+     * Load the voter's existing {@link Session#saveDefaultVote(String) default vote}.
+     * It replaces the voters current vote.
+     * @param voterName
+     * @throws IOException
+     */
     public void loadDefaultVote(String voterName) throws IOException {
         requireElection();
 
-        Path path = Paths.get(DIR_PATH + FILE_NAME);
+        Path path = Paths.get(DIR_PATH + VOTES_FILE_NAME);
 
         Vote vote = Files.readAllLines(path)
                 .stream()
@@ -123,6 +137,11 @@ public class Session { // TODO threading issues?
         addVote((RankedVote) vote); // FIXME
     }
 
+    /**
+     * Clear the voter's current vote in this election.
+     * This is irreversible.
+     * @param voterName
+     */
     public void clearCurrentVote(String voterName) {
         requireElection();
 
@@ -135,12 +154,38 @@ public class Session { // TODO threading issues?
         election.removeVote(race, vote);
     }
 
+    /**
+     * Clear the voter's existing {@link Session#saveDefaultVote(String) default vote}.
+     * This is irreversible.
+     * @param voterName
+     */
     public void clearDefaultVote(String voterName) throws IOException {
         replaceDefaultVote(voterName, null);
     }
 
+    /**
+     * In consecutive elections, if some voter(s) always vote prefer unpopular options, their votes are "wasted".
+     * In order to let them win occasionally, their preferences need to build in weight over time
+     * according to how much of their vote they spent on eliminated options.
+     * <br>
+     * This method should be called <strong>only once</strong> after a winner is determined.
+     * It records that "wasted" portion of votes so they can be heard in future elections. 
+     * This portion is calculated according to {@link WeightedVote#unspentWeight(Vote, Option)}.
+     * @param winner The option that won the most recent {@link Race race}
+     * @throws IOException
+     */
+    public void recordUnspentVotes(Option winner) throws IOException {
+        Set<Vote> votes = election.getVotes(race);
+        Map<String,Map<Option,Double>> voterUnspentWeights = new HashMap<>();
+        for (Vote vote : votes) {
+            Map<Option, Double> unspentPortions = WeightedVote.unspentWeight(vote, winner);
+            voterUnspentWeights.put(vote.voterName, unspentPortions);
+        }
+        updateUnspentVotes(voterUnspentWeights, winner);
+    }
+
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
-        Path path = Paths.get(DIR_PATH + FILE_NAME);
+        Path path = Paths.get(DIR_PATH + VOTES_FILE_NAME);
 
         List<Vote> recordedVotes = new ArrayList<>();
         if (Files.exists(path)) {
@@ -153,6 +198,51 @@ public class Session { // TODO threading issues?
         }
         if (vote != null) {
             recordedVotes.add(vote);
+        }
+
+        Files.createDirectories(Path.of(DIR_PATH));
+        Files.deleteIfExists(path);
+        Files.write(path, serializeVotes(recordedVotes).getBytes());
+    }
+
+    private void updateUnspentVotes(Map<String,Map<Option,Double>> voterUnspentWeights, Option winner) throws IOException {
+        Path path = Paths.get(DIR_PATH + UNSPENT_FILE_NAME);
+
+        // Get previously recorded votes
+        List<WeightedVote> recordedVotes = new ArrayList<>();
+        if (Files.exists(path)) {
+            recordedVotes = Files.readAllLines(path)
+                    .stream()
+                    .map(this::deserializeVote)
+                    .filter(Objects::nonNull)
+                    .map(WeightedVote::fromVote)
+                    .collect(Collectors.toList());
+        }
+        // Add new, previously unrecorded votes:
+        for (String name : voterUnspentWeights.keySet()) {
+            if (name == null) { continue; }
+            boolean recorded = recordedVotes
+                    .stream()
+                    .anyMatch(vote -> name.equals(vote.voterName));
+            if (!recorded) {
+                recordedVotes.add(new WeightedVote(name));
+            }
+        }
+        // Update recorded votes
+        for (WeightedVote vote : recordedVotes) {
+            Map<Option, Double> unspentPortions = voterUnspentWeights.get(vote.voterName);
+            if (unspentPortions == null) { continue; }
+            Set<Option> superset = new HashSet<>(unspentPortions.keySet());
+            superset.addAll(vote.getRankings());
+            for (Option option : superset) {
+                double newRating = 0.0;
+                if (!winner.equals(option)) {
+                    Double unspent = unspentPortions.get(option);
+                    Double voteRating = vote.getRawRating(option); // RAW rating, not normalized rating
+                    newRating = (unspent == null ? 0.0 : unspent) + (voteRating == null ? 0.0 : voteRating);
+                }
+                vote.rate(option, newRating);
+            }
         }
 
         Files.createDirectories(Path.of(DIR_PATH));
@@ -184,14 +274,15 @@ public class Session { // TODO threading issues?
                 if (vote == null) { continue; }
                 return vote;
             }
-        } catch (JsonProcessingException dbe) {
-            throw new RuntimeException(dbe);
+        } catch (JsonProcessingException jpe) {
+            System.out.println("error deserializing vote: " + input);
+            throw new RuntimeException("Error processing JSON", jpe);
         }
 
         return null;
     }
 
-    private String serializeVotes(List<Vote> votes) {
+    private String serializeVotes(Collection<? extends Vote> votes) {
         try {
             StringJoiner joiner = new StringJoiner("\n");
             for (Vote vote : votes) {
@@ -200,7 +291,8 @@ public class Session { // TODO threading issues?
             }
             return joiner.toString();
         } catch (JsonProcessingException jpe) {
-            throw new RuntimeException(jpe);
+            System.out.println("error serializing votes");
+            throw new RuntimeException("Error processing JSON", jpe);
         }
     }
 }
