@@ -113,9 +113,14 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
      */
     private void tallyVote(Vote vote) {
         if (vote instanceof WeightedVote weightedVote) {
-            weightedVote.normalizeAcross(standings.keySet());
+            if (!weightedVote.isShadow()) {
+                weightedVote.normalizeAcross(standings.keySet());
+            }
             for (Option option : standings.keySet()) {
                 Double rating = weightedVote.getNormalizedRating(option);
+                if (weightedVote.isShadow()) {
+                    rating = weightedVote.getRawRating(option); // use raw instead
+                }
                 double unboxed = rating == null ? 0.0 : rating;
                 standings.put(option, standings.get(option) + unboxed);
             }

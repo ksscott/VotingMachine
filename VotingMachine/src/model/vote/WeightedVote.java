@@ -122,29 +122,44 @@ public class WeightedVote extends RankedVote implements Cloneable {
      * @return a mapping of unspent weightings for each preferred candidate.
      * These unspent weights are normalized, and should add to at most <code>1.0</code>.
      */
-    public static Map<Option,Double> unspentWeight(Vote vote, Option winner) {
+    public static WeightedVote unspentWeight(Vote vote, Option winner) {
         Map<Option,Double> unspent = new HashMap<>();
+        WeightedVote retval;
         if (vote instanceof WeightedVote wv) {
-            WeightedVote weightedVote = wv.clone(); // Don't modify state of the original vote
-            weightedVote.normalizeAcross(weightedVote.ratings.keySet()); // Remove normalization filter
-            for (Option option : weightedVote.getRankings()) { // in decreasing order of preference
-                Double unspentPortion = weightedVote.getNormalizedRating(option);
+            WeightedVote tempWeightedVote = wv.clone(); // Don't modify state of the original vote
+            tempWeightedVote.normalizeAcross(tempWeightedVote.ratings.keySet()); // Remove normalization filter
+            for (Option option : tempWeightedVote.getRankings()) { // in decreasing order of preference
+                Double unspentPortion = tempWeightedVote.getNormalizedRating(option);
                 if (winner.equals(option)) {
                     if (unspentPortion < 0.0) { // voted against option
                         // voting against winner is considered "unspent"
                         unspent.put(option, unspentPortion);
                     }
                     break; // finished; remaining options are considered "spent"
-                }
-                unspent.put(option, unspentPortion);
+                } // else: this option lost
+                if (unspentPortion > 0.0) {
+                    // voted for this loser; record unspent weight
+                    unspent.put(option, unspentPortion);
+                    break;
+                } // else: voted against this loser; no unspent weight
             }
+            for (Option option : unspent.keySet()) {
+                wv.ratings = new HashMap<>();
+                wv.rate(option, unspent.get(option));
+            }
+            retval = wv;
         } else {
             Option chosen = vote.toSingleVote().getVote();
+            retval = new WeightedVote(vote.voterName);
             if (chosen != null && !chosen.equals(winner)) {
+                retval.rate(chosen, 1.0);
                 unspent.put(chosen, 1.0);
             }
         }
-        return unspent;
+
+        retval.setShadow(true);
+        retval.vetoes = new HashSet<>();
+        return retval;
     }
 
     @Override
@@ -157,7 +172,11 @@ public class WeightedVote extends RankedVote implements Cloneable {
                 .stream()
                 .map(opt -> "(" + opt.name() + "," + ratings.get(opt) + ")")
                 .collect(Collectors.joining(","));
-        return "WeightedVote{ vetoes: {" + vetoesString + "}, ratings: {" + ratingsString + "}}";
+        String shadowString = this.shadow ? "(shadow)" : "";
+        return "WeightedVote{ " + shadowString
+                + " voter:" + voterName
+                + " vetoes:{" + vetoesString
+                + "}, ratings:{" + ratingsString + "}}";
     }
 
     private static double pointsForRank(int rank) {

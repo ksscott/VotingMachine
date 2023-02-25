@@ -10,7 +10,7 @@ public enum Game {
 	BATTLEBLOCK_THEATER("BattleBlock Theater", 4),
 	BOOMERANG_FU("Boomerang Fu", 6),
 	CHESS("Chess", 4), // 2, 4, infinite max players?
-	CIVILIZATION_6("Sid Meier's Civilization IV", 0),
+	CIVILIZATION_6("Sid Meier's Civilization VI", 0),
 	COSMOTEER("Cosmoteer", 8),
 	DONT_STARVE_TOGETHER("Don't Starve Together", 6),
 	ECO("Eco", 0),

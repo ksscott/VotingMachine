@@ -89,8 +89,17 @@ public class Session { // TODO threading issues?
         vote.veto(new Option(game.getTitle()));
     }
 
-    public Set<Option> pickWinner() {
+    public Set<Option> pickWinner() throws IOException {
         requireElection();
+
+        Set<String> voters = election.getVotes(race)
+                .stream()
+                .map(v -> v.voterName)
+                .collect(Collectors.toSet());
+        loadUnspentVotes()
+                .stream()
+                .filter(v -> voters.contains(v.voterName))
+                .forEach(v -> election.addVote(race, v));
 
         Map<Race,Set<Option>> result = Evaluator.evaluateRankedChoice(election);
         return result.get(race);
@@ -145,13 +154,10 @@ public class Session { // TODO threading issues?
     public void clearCurrentVote(String voterName) {
         requireElection();
 
-        Vote vote = election.getVotes(race)
+        election.getVotes(race)
                 .stream()
-                .filter(v -> v.voterName.equals(voterName))
-                .findAny()
-                .orElse(null);
-
-        election.removeVote(race, vote);
+                .filter(v -> v.voterName.equals(voterName)) // vote and shadow vote
+                .forEach(v -> election.removeVote(race, v));
     }
 
     /**
@@ -164,7 +170,7 @@ public class Session { // TODO threading issues?
     }
 
     /**
-     * In consecutive elections, if some voter(s) always vote prefer unpopular options, their votes are "wasted".
+     * In consecutive elections, if some voter(s) always vote for unpopular options, their votes are "wasted".
      * In order to let them win occasionally, their preferences need to build in weight over time
      * according to how much of their vote they spent on eliminated options.
      * <br>
@@ -175,14 +181,14 @@ public class Session { // TODO threading issues?
      * @throws IOException
      */
     public void recordUnspentVotes(Option winner) throws IOException {
-        Set<Vote> votes = election.getVotes(race);
-        Map<String,Map<Option,Double>> voterUnspentWeights = new HashMap<>();
-        for (Vote vote : votes) {
-            Map<Option, Double> unspentPortions = WeightedVote.unspentWeight(vote, winner);
-            voterUnspentWeights.put(vote.voterName, unspentPortions);
-        }
-        updateUnspentVotes(voterUnspentWeights, winner);
+        Set<WeightedVote> unspentVotes = election.getVotes(race, false)
+                .stream()
+                .map(v -> WeightedVote.unspentWeight(v, winner))
+                .collect(Collectors.toSet());
+        updateUnspentVotes(unspentVotes, winner);
     }
+
+    public void setIncludeShadow(boolean includeShadow) { election.setIncludeShadow(includeShadow); }
 
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
         Path path = Paths.get(DIR_PATH + VOTES_FILE_NAME);
@@ -205,46 +211,60 @@ public class Session { // TODO threading issues?
         Files.write(path, serializeVotes(recordedVotes).getBytes());
     }
 
-    private void updateUnspentVotes(Map<String,Map<Option,Double>> voterUnspentWeights, Option winner) throws IOException {
+    private Set<WeightedVote> loadUnspentVotes() throws IOException {
         Path path = Paths.get(DIR_PATH + UNSPENT_FILE_NAME);
 
-        // Get previously recorded votes
-        List<WeightedVote> recordedVotes = new ArrayList<>();
+        Set<WeightedVote> recordedVotes = new HashSet<>();
         if (Files.exists(path)) {
             recordedVotes = Files.readAllLines(path)
                     .stream()
                     .map(this::deserializeVote)
                     .filter(Objects::nonNull)
                     .map(WeightedVote::fromVote)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
         }
-        // Add new, previously unrecorded votes:
-        for (String name : voterUnspentWeights.keySet()) {
-            if (name == null) { continue; }
-            boolean recorded = recordedVotes
-                    .stream()
-                    .anyMatch(vote -> name.equals(vote.voterName));
-            if (!recorded) {
-                recordedVotes.add(new WeightedVote(name));
-            }
-        }
+        return recordedVotes;
+    }
+
+    private void updateUnspentVotes(Set<WeightedVote> updates, Option winner) throws IOException {
+        // Get previously recorded votes
+        Set<WeightedVote> recordedVotes = loadUnspentVotes();
+
         // Update recorded votes
         for (WeightedVote vote : recordedVotes) {
-            Map<Option, Double> unspentPortions = voterUnspentWeights.get(vote.voterName);
-            if (unspentPortions == null) { continue; }
-            Set<Option> superset = new HashSet<>(unspentPortions.keySet());
+            WeightedVote update = updates
+                    .stream()
+                    .filter(vote::equals)
+                    .findAny()
+                    .orElse(null);
+            // don't update an old vote if that person isn't here this time:
+            if (update == null) { continue; }
+
+            // all options rated by new and old votes
+            Set<Option> superset = new HashSet<>(update.getRankings());
             superset.addAll(vote.getRankings());
             for (Option option : superset) {
-                double newRating = 0.0;
-                if (!winner.equals(option)) {
-                    Double unspent = unspentPortions.get(option);
-                    Double voteRating = vote.getRawRating(option); // RAW rating, not normalized rating
-                    newRating = (unspent == null ? 0.0 : unspent) + (voteRating == null ? 0.0 : voteRating);
+                Double unspent = update.getRawRating(option); // RAW rating, not normalized rating
+                if (unspent == null) { unspent = 0.0; }
+                Double pastUnspent = vote.getRawRating(option); // RAW rating, not normalized rating
+                if (pastUnspent == null) { pastUnspent = 0.0; }
+
+                if (winner.equals(option)) {
+                    if (pastUnspent > 0.0) { pastUnspent = 0.0; } // we got our wish
+                } else {
+                    if (pastUnspent < 0.0) { pastUnspent = 0.0; } // we got our wish
                 }
-                vote.rate(option, newRating);
+
+                double newRating = unspent + pastUnspent;
+                if (newRating < 0.0 || newRating > 0.0) {
+                    vote.rate(option, newRating);
+                }
             }
         }
+        // Add new, previously unrecorded votes:
+        recordedVotes.addAll(updates);
 
+        Path path = Paths.get(DIR_PATH + UNSPENT_FILE_NAME);
         Files.createDirectories(Path.of(DIR_PATH));
         Files.deleteIfExists(path);
         Files.write(path, serializeVotes(recordedVotes).getBytes());

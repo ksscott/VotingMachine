@@ -1,5 +1,6 @@
 package model.vote;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import model.Option;
 
 import java.io.Serializable;
@@ -12,6 +13,8 @@ public abstract class Vote implements Serializable {
 
 	public final String voterName;
 	protected Set<Option> vetoes;
+	@JsonProperty
+	protected boolean shadow;
 
 	public Vote(String voterName) {
 		this.voterName = voterName;
@@ -26,15 +29,19 @@ public abstract class Vote implements Serializable {
 
 	public void clearVetoes() { this.vetoes = new HashSet<>(); }
 
+	public boolean isShadow() { return this.shadow; }
+
+	public void setShadow(boolean shadow) { this.shadow = shadow; }
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Vote vote)) return false;
-		return Objects.equals(voterName, vote.voterName);
+		return shadow == vote.shadow && Objects.equals(voterName, vote.voterName);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(voterName);
+		return Objects.hash(voterName, shadow);
 	}
 }
