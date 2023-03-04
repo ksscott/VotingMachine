@@ -6,7 +6,7 @@ import java.util.*;
 
 public class Election<V extends Vote> {
 
-	public final Ballot ballot;
+	private Ballot ballot;
 	private Map<Race, Set<V>> votes;
 
 	public Election(Ballot ballot) {
@@ -16,6 +16,9 @@ public class Election<V extends Vote> {
 			votes.put(race, new HashSet<>());
 		}
 	}
+
+	public Ballot getBallot() { return this.ballot; }
+	public void setBallot(Ballot ballot) { this.ballot = ballot; }
 
 	public void addVote(Race race, V vote) {
 		if (!ballot.races().contains(race)) {

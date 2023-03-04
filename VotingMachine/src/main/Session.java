@@ -23,7 +23,7 @@ public class Session { // TODO threading issues?
     private Race race; // FIXME ?
 
     public void startElection() {
-        Set<Option> options = Game.shortList() // FIXME
+        Set<Option> options = Arrays.asList(Game.values()) // FIXME
                 .stream()
                 .map(Game::getTitle)
                 .map(Option::new)
@@ -32,6 +32,8 @@ public class Session { // TODO threading issues?
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
     }
+
+    public Set<Option> getOptions() { return race.options(); }
 
     public void addVote(RankedVote vote) {
         requireElection();
@@ -65,28 +67,30 @@ public class Session { // TODO threading issues?
         addVote(voterName, games);
     }
 
-    public void rate(String voterName, Game game, int rating) {
+    public void rate(String voterName, Option option, int rating) {
         requireElection();
 
-        if (game == null) { throw new IllegalArgumentException("Game not recognized"); }
+        if (option == null || !race.options().contains(option)) {
+            throw new IllegalArgumentException("Option not recognized");
+        }
 
         Vote vote = getVote(voterName);
         if (vote == null || !(vote instanceof WeightedVote)) {
             vote = new WeightedVote(voterName);
         }
-        ((WeightedVote) vote).rate(new Option(game.getTitle()), (double) rating);
+        ((WeightedVote) vote).rate(option, (double) rating);
 
         addVote((RankedVote) vote);
     }
 
-    public void veto(String voterName, Game game) {
+    public void veto(String voterName, Option option) {
         requireElection();
 
         Vote vote = getVote(voterName);
         if (vote == null) {
             vote = new WeightedVote(voterName);
         }
-        vote.veto(new Option(game.getTitle()));
+        vote.veto(option);
     }
 
     public Set<Option> pickWinner() {
@@ -137,6 +141,21 @@ public class Session { // TODO threading issues?
 
     public void clearDefaultVote(String voterName) throws IOException {
         replaceDefaultVote(voterName, null);
+    }
+
+    public void suggest(Option suggestion) {
+        requireElection();
+
+        Set<Option> options = race.options();
+        options.add(suggestion);
+        race = new Race(race.name(), options);
+
+        Ballot ballot = election.getBallot();
+        election.setBallot(new Ballot(ballot.name(), race));
+    }
+
+    public Optional<Option> interpret(String input) {
+        return race.options().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
     }
 
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {

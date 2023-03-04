@@ -23,16 +23,24 @@ public enum SlashCommand {
 //                ).queue();
 //    }),
     GAMES_LIST("games", "Lists out the games that we can play",
-        data -> data,
-        (event, session) -> {
-            List<Game> games = Game.shortList();
-            String stringList = games
-                    .stream()
-                    .map(Game::getTitle)
-                    .sorted()
-                    .collect(Collectors.joining("\n"));
-            event.reply(stringList).setEphemeral(true).queue();
-        }),
+            data -> data,
+            (event, session) -> {
+                String stringList = session.getOptions()
+                        .stream()
+                        .map(Option::name)
+                        .sorted()
+                        .collect(Collectors.joining("\n"));
+                event.reply(stringList).setEphemeral(true).queue();
+            }),
+    SUGGEST("suggest", "Add an option to this election",
+            data -> data.addOption(OptionType.STRING, "game", "The game to suggest", true),
+            (event, session) -> {
+                String gameString = event.getOption("game").getAsString();
+
+                String username = event.getUser().getName();
+                session.suggest(new Option(gameString));
+                event.reply(username + " suggested the game: " + gameString).queue();
+            }),
     NEW_POLL("new", "Begins a new election",
             data -> data,
             (event, session) -> {
@@ -79,26 +87,26 @@ public enum SlashCommand {
             (event, session) -> {
                 String username = event.getUser().getName();
                 String gameString = event.getOption("game").getAsString();
-                Game game = Game.interpret(gameString).orElse(null);
+                Option option = session.interpret(gameString).orElse(null);
                 Integer rating = event.getOption("rating").getAsInt();
 
-                session.rate(username, game, rating);
+                session.rate(username, option, rating);
 
-                event.reply("Rated game: " + game.getTitle() + " -> " + rating)/*.setEphemeral(true)*/.queue();
+                event.reply("Rated game: " + option.name() + " -> " + rating)/*.setEphemeral(true)*/.queue();
             }),
     VETO("veto", "Cause a game to automatically lose the election",
             data -> data.addOption(OptionType.STRING, "game", "The game to forbid", true),
             (event, session) -> {
                 String gameString = event.getOption("game").getAsString();
-                Game game = Game.interpret(gameString).orElse(null);
-                if (game == null) {
+                Option option = session.interpret(gameString).orElse(null);
+                if (option == null) {
                     event.reply("Game not recognized").setEphemeral(true).queue();
                     return;
                 }
 
                 String username = event.getUser().getName();
-                session.veto(username, game);
-                event.reply(username + " vetoed the game: " + game.getTitle()).queue();
+                session.veto(username, option);
+                event.reply(username + " vetoed the game: " + option.name()).queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,
