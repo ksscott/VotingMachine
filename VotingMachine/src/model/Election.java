@@ -40,7 +40,7 @@ public class Election<V extends Vote> {
 		return votes.get(race)
 				.stream()
 				.peek(v -> System.out.println("Trying: " + v))
-				.filter(v -> (includeShadow || !v.isShadow()))
+				.filter(v -> (includingShadow || !v.isShadow()))
 				.peek(v -> System.out.println("Including: " + v))
 				.collect(Collectors.toSet());
 	}

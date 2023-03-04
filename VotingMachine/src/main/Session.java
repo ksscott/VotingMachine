@@ -92,7 +92,7 @@ public class Session { // TODO threading issues?
     public Set<Option> pickWinner() throws IOException {
         requireElection();
 
-        Set<String> voters = election.getVotes(race)
+        Set<String> voters = election.getVotes(race, false)
                 .stream()
                 .map(v -> v.voterName)
                 .collect(Collectors.toSet());
@@ -271,7 +271,7 @@ public class Session { // TODO threading issues?
     }
 
     private Vote getVote(String voterName) {
-        return election.getVotes(race)
+        return election.getVotes(race, false)
                 .stream()
                 .filter(v -> v.voterName.equals(voterName))
                 .findAny()
