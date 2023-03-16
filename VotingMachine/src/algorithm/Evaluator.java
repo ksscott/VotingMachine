@@ -25,7 +25,7 @@ public class Evaluator {
 	}
 
 	public static <V extends Vote> Map<Race,Set<Option>> evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
-		Ballot ballot = election.ballot;
+		Ballot ballot = election.getBallot();
 		Map<Race, Set<Option>> result = new HashMap<>();
 
 		for (Race race : ballot.races()) {
