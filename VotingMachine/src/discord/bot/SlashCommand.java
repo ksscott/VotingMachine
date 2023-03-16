@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,11 @@ public enum SlashCommand {
     NEW_POLL("new", "Begins a new election",
             data -> data,
             (event, session) -> {
-                session.startElection();
+                Set<Option> options = Arrays.stream(Game.values())
+                        .map(Game::getTitle)
+                        .map(Option::new)
+                        .collect(Collectors.toSet());
+                session.startElection(options);
 
                 String message = "New poll started! \n" +
                         "Type /vote to vote for a list of games. \n" +
@@ -64,17 +69,17 @@ public enum SlashCommand {
             },
             (event, session) -> {
                 String username = event.getUser().getName();
-                List<Game> gamesList = event.getOptions()
+                List<Option> gamesList = event.getOptions()
                         .stream()
                         .map(OptionMapping::getAsString)
-                        .map(Game::interpret)
+                        .map(session::interpret)
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         .collect(Collectors.toList());
 
                 session.addVote(username, gamesList);
 
-                String namesList = gamesList.stream().map(Game::getTitle).collect(Collectors.joining("\n"));
+                String namesList = gamesList.stream().map(Option::name).collect(Collectors.joining("\n"));
                 event.reply("Voted for game: " + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
                 event.getChannel().sendMessage(username + " voted.").queue();
             }),
@@ -88,6 +93,10 @@ public enum SlashCommand {
                 String username = event.getUser().getName();
                 String gameString = event.getOption("game").getAsString();
                 Option option = session.interpret(gameString).orElse(null);
+                if (option == null) {
+                    event.reply("Game not recognized: " + gameString).setEphemeral(true).queue();
+                    return;
+                }
                 Integer rating = event.getOption("rating").getAsInt();
 
                 session.rate(username, option, rating);

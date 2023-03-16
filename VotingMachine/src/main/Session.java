@@ -4,7 +4,6 @@ import algorithm.Evaluator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import elections.games.Game;
 import model.Ballot;
 import model.Election;
 import model.Option;
@@ -22,12 +21,7 @@ public class Session { // TODO threading issues?
     private Election<Vote> election;
     private Race race; // FIXME ?
 
-    public void startElection() {
-        Set<Option> options = Arrays.asList(Game.values()) // FIXME
-                .stream()
-                .map(Game::getTitle)
-                .map(Option::new)
-                .collect(Collectors.toSet());
+    public void startElection(Set<Option> options) {
         race = new Race("Game", options);
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
@@ -41,13 +35,8 @@ public class Session { // TODO threading issues?
         election.addVote(race, vote);
     }
 
-    public void addVote(String voterName, List<Game> games) {
+    public void addVote(String voterName, List<Option> orderedChoices) {
         requireElection();
-
-        List<Option> orderedChoices = games.stream()
-                .map(Game::getTitle)
-                .map(Option::new)
-                .collect(Collectors.toList());
 
         SimpleRankingVote vote = new SimpleRankingVote(voterName);
         vote.select(orderedChoices);
@@ -58,13 +47,13 @@ public class Session { // TODO threading issues?
     public void addVote(String voterName, String... gameStrings) {
         requireElection();
 
-        List<Game> games = Arrays.stream(gameStrings)
-                .map(Game::interpret)
+        List<Option> options = Arrays.stream(gameStrings)
+                .map(this::interpret)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
-        addVote(voterName, games);
+        addVote(voterName, options);
     }
 
     public void rate(String voterName, Option option, int rating) {
@@ -144,18 +133,18 @@ public class Session { // TODO threading issues?
     }
 
     public void suggest(Option suggestion) {
-        requireElection();
+         requireElection();
 
-        Set<Option> options = race.options();
+        Set<Option> options = new HashSet<>(race.options());
         options.add(suggestion);
+        Race oldRace = race;
         race = new Race(race.name(), options);
 
-        Ballot ballot = election.getBallot();
-        election.setBallot(new Ballot(ballot.name(), race));
+        election.updateRace(oldRace, race);
     }
 
     public Optional<Option> interpret(String input) {
-        return race.options().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
+        return getOptions().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
     }
 
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {

@@ -1,6 +1,7 @@
 package model;
 
 import model.vote.Vote;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -18,7 +19,19 @@ public class Election<V extends Vote> {
 	}
 
 	public Ballot getBallot() { return this.ballot; }
-	public void setBallot(Ballot ballot) { this.ballot = ballot; }
+
+	public void updateRace(@NotNull Race race, @NotNull Race newRace) {
+		Set<V> oldVotes = votes.get(race);
+		votes.remove(race);
+		votes.put(newRace, oldVotes);
+
+		Set<Race> oldRaces = new HashSet<>(ballot.races());
+		if (!oldRaces.remove(race)) {
+			throw new IllegalStateException("Ran into troubles tracking electoral races");
+		}
+		oldRaces.add(newRace);
+		ballot = new Ballot(ballot.name(), oldRaces);
+	}
 
 	public void addVote(Race race, V vote) {
 		if (!ballot.races().contains(race)) {
