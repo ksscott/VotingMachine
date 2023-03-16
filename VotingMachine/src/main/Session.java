@@ -147,6 +147,16 @@ public class Session { // TODO threading issues?
         return getOptions().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
     }
 
+    public Vote getVote(String voterName) {
+        requireElection();
+
+        return election.getVotes(race)
+                .stream()
+                .filter(v -> v.voterName.equals(voterName))
+                .findAny()
+                .orElse(null);
+    }
+
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
         Path path = Paths.get(DIR_PATH + FILE_NAME);
 
@@ -166,14 +176,6 @@ public class Session { // TODO threading issues?
         Files.createDirectories(Path.of(DIR_PATH));
         Files.deleteIfExists(path);
         Files.write(path, serializeVotes(recordedVotes).getBytes());
-    }
-
-    private Vote getVote(String voterName) {
-        return election.getVotes(race)
-                .stream()
-                .filter(v -> v.voterName.equals(voterName))
-                .findAny()
-                .orElse(null);
     }
 
     private void requireElection() {

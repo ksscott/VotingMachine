@@ -3,6 +3,7 @@ package discord.bot;
 import elections.games.Game;
 import main.Session;
 import model.Option;
+import model.vote.Vote;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -140,6 +141,21 @@ public enum SlashCommand {
                 String username = event.getUser().getName();
                 session.loadDefaultVote(username);
                 event.reply("Default vote loaded for " + username).queue();
+            }),
+    CURRENT_VOTE("current-vote", "List your current vote in this election",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getName();
+                Vote vote = session.getVote(username);
+                String message;
+                if (vote != null) {
+                    message = "Your current vote is:\n" + vote;
+                } else {
+                    message = "You haven't cast a vote in the current election. \n" +
+                            "Type /vote to vote for a list of games. \n" +
+                            "Type /rate to build a vote by rating one game at a time.";
+                }
+                event.reply(message).setEphemeral(true).queue();
             }),
     CLEAR("clear", "Clear your current vote in this election",
             data -> data,
