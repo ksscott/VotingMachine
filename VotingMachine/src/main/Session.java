@@ -9,6 +9,7 @@ import model.Election;
 import model.Option;
 import model.Race;
 import model.vote.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -244,7 +245,7 @@ public class Session { // TODO threading issues?
         return recordedVotes;
     }
 
-    private void updateUnspentVotes(Set<WeightedVote> updates, Option winner) throws IOException {
+    private void updateUnspentVotes(@NotNull Set<WeightedVote> updates, @NotNull Option winner) throws IOException {
         // Get previously recorded votes
         Set<WeightedVote> recordedVotes = loadUnspentVotes();
 
@@ -274,7 +275,9 @@ public class Session { // TODO threading issues?
                 }
 
                 double newRating = unspent + pastUnspent;
-                if (newRating < 0.0 || newRating > 0.0) {
+                if (newRating == 0.0) {
+                    vote.clearRating(option);
+                } else {
                     vote.rate(option, newRating);
                 }
             }

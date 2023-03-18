@@ -39,6 +39,10 @@ public class WeightedVote extends RankedVote implements Cloneable {
         filter = new HashSet<>();
     }
 
+    public void clearRating(Option option) {
+        ratings.remove(option);
+    }
+
     @Override
     public List<Option> getRankings() {
         return ratings.keySet()
@@ -115,7 +119,7 @@ public class WeightedVote extends RankedVote implements Cloneable {
      * that rating is included in the vote's unspent weight.
      * A {@link SimpleRankingVote} gives all its weight to its highest-rated option.
      *
-     * FIXME need to handle tied ratings
+     * FIXME need to handle tied ratings, currently gives random behavior RE: whether ties are counted as unspent or not
      *
      * @param vote
      * @param winner The winning option in a recently completed {@link model.Race race}.
@@ -140,11 +144,10 @@ public class WeightedVote extends RankedVote implements Cloneable {
                 if (unspentPortion > 0.0) {
                     // voted for this loser; record unspent weight
                     unspent.put(option, unspentPortion);
-                    break;
                 } // else: voted against this loser; no unspent weight
             }
+            tempWeightedVote.ratings = new HashMap<>();
             for (Option option : unspent.keySet()) {
-                tempWeightedVote.ratings = new HashMap<>();
                 tempWeightedVote.rate(option, unspent.get(option));
             }
             retval = tempWeightedVote;
@@ -159,6 +162,8 @@ public class WeightedVote extends RankedVote implements Cloneable {
 
         retval.setShadow(true);
         retval.vetoes = new HashSet<>();
+//        System.out.println("Calculating unspent weight for winner " + winner.name() + " for vote: " + vote);
+//        System.out.println("Unspent weight: " + retval);
         return retval;
     }
 
