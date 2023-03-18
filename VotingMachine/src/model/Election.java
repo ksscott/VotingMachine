@@ -42,8 +42,6 @@ public class Election<V extends Vote> {
 		requireRace(race);
 		this.votes.get(race).remove(vote);
 		this.votes.get(race).add(vote);
-//		System.out.println("Added a vote");
-//		System.out.println(votes.get(race));
 	}
 
 	public Set<V> getVotes(Race race) {
@@ -51,20 +49,14 @@ public class Election<V extends Vote> {
 	}
 	public Set<V> getVotes(Race race, boolean includingShadow) {
 		requireRace(race);
-//		System.out.println("Returning votes");
-//		System.out.println(votes);
 		return votes.get(race)
 				.stream()
-//				.peek(v -> System.out.println("Trying: " + v))
 				.filter(v -> (includingShadow || !v.isShadow()))
-//				.peek(v -> System.out.println("Including: " + v))
 				.collect(Collectors.toSet());
 	}
 
 	public boolean removeVote(Race race, V vote) {
 		requireRace(race);
-//		System.out.println("Removing vote: " + vote);
-//		System.out.println("Existing votes: " + votes);
 		return votes.get(race).remove(vote);
 	}
 

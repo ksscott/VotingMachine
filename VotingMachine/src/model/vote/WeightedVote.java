@@ -162,8 +162,6 @@ public class WeightedVote extends RankedVote implements Cloneable {
 
         retval.setShadow(true);
         retval.vetoes = new HashSet<>();
-//        System.out.println("Calculating unspent weight for winner " + winner.name() + " for vote: " + vote);
-//        System.out.println("Unspent weight: " + retval);
         return retval;
     }
 
