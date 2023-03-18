@@ -1,6 +1,7 @@
 package model;
 
 import model.vote.Vote;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,7 +11,7 @@ import java.util.stream.Collectors;
 
 public class Election<V extends Vote> {
 
-	public final Ballot ballot;
+	private Ballot ballot;
 	private Map<Race, Set<V>> votes;
 	private boolean includeShadow = true;
 
@@ -20,6 +21,21 @@ public class Election<V extends Vote> {
 		for (Race race : ballot.races()) {
 			votes.put(race, new HashSet<>());
 		}
+	}
+
+	public Ballot getBallot() { return this.ballot; }
+
+	public void updateRace(@NotNull Race race, @NotNull Race newRace) {
+		Set<V> oldVotes = votes.get(race);
+		votes.remove(race);
+		votes.put(newRace, oldVotes);
+
+		Set<Race> oldRaces = new HashSet<>(ballot.races());
+		if (!oldRaces.remove(race)) {
+			throw new IllegalStateException("Ran into troubles tracking electoral races");
+		}
+		oldRaces.add(newRace);
+		ballot = new Ballot(ballot.name(), oldRaces);
 	}
 
 	public void addVote(Race race, V vote) {

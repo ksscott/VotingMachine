@@ -4,8 +4,6 @@ import elections.games.Game;
 import model.Option;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class REPL {
 
@@ -26,7 +24,11 @@ public class REPL {
 		List<Game> gameList = Game.shortList();
 
 		Session session = new Session();
-		session.startElection();
+		Set<Option> options = Arrays.stream(Game.values())
+				.map(Game::getTitle)
+				.map(Option::new)
+				.collect(Collectors.toSet());
+		session.startElection(options);
 
 		System.out.println();
 		System.out.println("The options are:");
@@ -43,7 +45,7 @@ public class REPL {
 			System.out.println();
 			System.out.println("Casting Vote #" + voteNum);
 
-			List<Game> orderedChoices = new ArrayList<>();
+			List<Option> orderedChoices = new ArrayList<>();
 			int selectionRank = 1;
 			while(true) {
 				System.out.println("Enter your selection for Rank " + selectionRank + ", or 'done' to finish");
@@ -54,7 +56,7 @@ public class REPL {
 					break;
 				}
 
-				Optional<Game> inferred = Game.interpret(input);
+				Optional<Option> inferred = session.interpret(input);
 				if (inferred.isPresent()) {
 					orderedChoices.add(inferred.get());
 					selectionRank++;

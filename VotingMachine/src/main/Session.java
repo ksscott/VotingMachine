@@ -4,7 +4,6 @@ import algorithm.Evaluator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import elections.games.Game;
 import model.Ballot;
 import model.Election;
 import model.Option;
@@ -22,16 +21,13 @@ public class Session { // TODO threading issues?
     private Election<Vote> election;
     private Race race; // FIXME ?
 
-    public void startElection() {
-        Set<Option> options = Game.shortList() // FIXME
-                .stream()
-                .map(Game::getTitle)
-                .map(Option::new)
-                .collect(Collectors.toSet());
+    public void startElection(Set<Option> options) {
         race = new Race("Game", options);
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
     }
+
+    public Set<Option> getOptions() { return race.options(); }
 
     public void addVote(RankedVote vote) {
         requireElection();
@@ -39,13 +35,8 @@ public class Session { // TODO threading issues?
         election.addVote(race, vote);
     }
 
-    public void addVote(String voterName, List<Game> games) {
+    public void addVote(String voterName, List<Option> orderedChoices) {
         requireElection();
-
-        List<Option> orderedChoices = games.stream()
-                .map(Game::getTitle)
-                .map(Option::new)
-                .collect(Collectors.toList());
 
         SimpleRankingVote vote = new SimpleRankingVote(voterName);
         vote.select(orderedChoices);
@@ -56,37 +47,39 @@ public class Session { // TODO threading issues?
     public void addVote(String voterName, String... gameStrings) {
         requireElection();
 
-        List<Game> games = Arrays.stream(gameStrings)
-                .map(Game::interpret)
+        List<Option> options = Arrays.stream(gameStrings)
+                .map(this::interpret)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
-        addVote(voterName, games);
+        addVote(voterName, options);
     }
 
-    public void rate(String voterName, Game game, int rating) {
+    public void rate(String voterName, Option option, int rating) {
         requireElection();
 
-        if (game == null) { throw new IllegalArgumentException("Game not recognized"); }
+        if (option == null || !race.options().contains(option)) {
+            throw new IllegalArgumentException("Option not recognized");
+        }
 
         Vote vote = getVote(voterName);
         if (vote == null || !(vote instanceof WeightedVote)) {
             vote = new WeightedVote(voterName);
         }
-        ((WeightedVote) vote).rate(new Option(game.getTitle()), (double) rating);
+        ((WeightedVote) vote).rate(option, (double) rating);
 
         addVote((RankedVote) vote);
     }
 
-    public void veto(String voterName, Game game) {
+    public void veto(String voterName, Option option) {
         requireElection();
 
         Vote vote = getVote(voterName);
         if (vote == null) {
             vote = new WeightedVote(voterName);
         }
-        vote.veto(new Option(game.getTitle()));
+        vote.veto(option);
     }
 
     public Set<Option> pickWinner() throws IOException {
@@ -169,13 +162,38 @@ public class Session { // TODO threading issues?
         replaceDefaultVote(voterName, null);
     }
 
+    public void suggest(Option suggestion) {
+         requireElection();
+
+        Set<Option> options = new HashSet<>(race.options());
+        options.add(suggestion);
+        Race oldRace = race;
+        race = new Race(race.name(), options);
+
+        election.updateRace(oldRace, race);
+    }
+
+    public Optional<Option> interpret(String input) {
+        return getOptions().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
+    }
+
+    public Vote getVote(String voterName) {
+        requireElection();
+
+        return election.getVotes(race, false)
+                .stream()
+                .filter(v -> v.voterName.equals(voterName))
+                .findAny()
+                .orElse(null);
+    }
+
     /**
      * In consecutive elections, if some voter(s) always vote for unpopular options, their votes are "wasted".
      * In order to let them win occasionally, their preferences need to build in weight over time
      * according to how much of their vote they spent on eliminated options.
      * <br>
      * This method should be called <strong>only once</strong> after a winner is determined.
-     * It records that "wasted" portion of votes so they can be heard in future elections. 
+     * It records that "wasted" portion of votes so they can be heard in future elections.
      * This portion is calculated according to {@link WeightedVote#unspentWeight(Vote, Option)}.
      * @param winner The option that won the most recent {@link Race race}
      * @throws IOException
@@ -268,14 +286,6 @@ public class Session { // TODO threading issues?
         Files.createDirectories(Path.of(DIR_PATH));
         Files.deleteIfExists(path);
         Files.write(path, serializeVotes(recordedVotes).getBytes());
-    }
-
-    private Vote getVote(String voterName) {
-        return election.getVotes(race, false)
-                .stream()
-                .filter(v -> v.voterName.equals(voterName))
-                .findAny()
-                .orElse(null);
     }
 
     private void requireElection() {
