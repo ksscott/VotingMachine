@@ -175,16 +175,16 @@ public enum SlashCommand {
             data -> data.addOption(OptionType.STRING, "game", "The winning game to play", true),
             (event, session) -> {
                 String gameString = event.getOption("game").getAsString();
-                Game game = Game.interpret(gameString).orElse(null);
+                Option game = session.interpret(gameString).orElse(null);
                 if (game == null) {
                     event.reply("Game not recognized").setEphemeral(true).queue();
                     return;
                 }
-                session.recordUnspentVotes(new Option(game.getTitle()));
+                session.recordUnspentVotes(game);
 
                 // FIXME There's a bug in here somewhere: "Error: null"
 
-                event.reply("Recorded winner of the last election: " + game.getTitle()).queue();
+                event.reply("Recorded winner of the last election: " + game.name()).queue();
             }),
     HELP("help", "Lists out available commands",
             data -> data,
