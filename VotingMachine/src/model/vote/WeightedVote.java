@@ -144,10 +144,10 @@ public class WeightedVote extends RankedVote implements Cloneable {
                 } // else: voted against this loser; no unspent weight
             }
             for (Option option : unspent.keySet()) {
-                wv.ratings = new HashMap<>();
-                wv.rate(option, unspent.get(option));
+                tempWeightedVote.ratings = new HashMap<>();
+                tempWeightedVote.rate(option, unspent.get(option));
             }
-            retval = wv;
+            retval = tempWeightedVote;
         } else {
             Option chosen = vote.toSingleVote().getVote();
             retval = new WeightedVote(vote.voterName);
