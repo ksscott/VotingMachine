@@ -4,6 +4,8 @@ import elections.games.Game;
 import model.Option;
 
 import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class REPL {
 
