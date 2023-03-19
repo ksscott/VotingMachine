@@ -3,6 +3,7 @@ package main;
 import elections.games.Game;
 import model.Option;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -76,11 +77,16 @@ public class REPL {
 		}
 
 		// determine winner(s)
-		List<String> winningNames = session.pickWinner()
-				.stream()
-				.map(Option::name)
-				.sorted()
-				.collect(Collectors.toList());
+		List<String> winningNames = null;
+		try {
+			winningNames = session.pickWinner()
+					.stream()
+					.map(Option::name)
+					.sorted()
+					.collect(Collectors.toList());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
 		System.out.println();
 		System.out.println("The winner is: " + String.join(", and ", winningNames));
