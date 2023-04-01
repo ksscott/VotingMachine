@@ -173,13 +173,14 @@ public class WeightedVote extends RankedVote implements Cloneable {
                 .collect(Collectors.joining(","));
         String ratingsString = ratings.keySet()
                 .stream()
+                .sorted((o1, o2) -> Double.compare(ratings.get(o2), ratings.get(o1)))
                 .map(opt -> "(" + opt.name() + "," + ratings.get(opt) + ")")
-                .collect(Collectors.joining(","));
+                .collect(Collectors.joining(",\n"));
         String shadowString = this.shadow ? "(shadow)" : "";
         return "WeightedVote{ " + shadowString
                 + " voter:" + voterName
-                + " vetoes:{" + vetoesString
-                + "}, ratings:{" + ratingsString + "}}";
+                + " \nvetoes:{" + vetoesString
+                + "}, \nratings:{\n" + ratingsString + "\n}}";
     }
 
     private static double pointsForRank(int rank) {
