@@ -2,8 +2,8 @@ package algorithm;
 
 import model.Ballot;
 import model.Election;
-import model.Option;
 import model.Race;
+import model.Result;
 import model.vote.Vote;
 
 import java.util.HashMap;
@@ -16,22 +16,22 @@ public class Evaluator {
 	/**
 	 * @return a RankedChoiceVote, using multiple choices to indicate tying winners of a race
 	 */
-	public static Map<Race,Set<Option>> evaluateSingle(Election<Vote> election) {
+	public static Map<Race, Result> evaluateSingle(Election<Vote> election) {
 		return evaluateElection(election, SingleChoice::new);
 	}
 
-	public static Map<Race,Set<Option>> evaluateRankedChoice(Election<Vote> election) {
+	public static Map<Race,Result> evaluateRankedChoice(Election<Vote> election) {
 		return evaluateElection(election, WeightedRunoff::new);
 	}
 
-	public static <V extends Vote> Map<Race,Set<Option>> evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
+	public static <V extends Vote> Map<Race,Result> evaluateElection(Election<V> election, Function<Race,EvalAlgorithm<V>> algorithm) {
 		Ballot ballot = election.getBallot();
-		Map<Race, Set<Option>> result = new HashMap<>();
+		Map<Race, Result> result = new HashMap<>();
 
 		for (Race race : ballot.races()) {
 			Set<V> votes = election.getVotes(race);
-			Set<Option> winners = algorithm.apply(race).evaluate(votes);
-			result.put(race, winners);
+			Result raceResult = algorithm.apply(race).evaluate(votes);
+			result.put(race, raceResult);
 		}
 		
 		return result;

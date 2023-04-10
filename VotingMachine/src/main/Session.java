@@ -4,12 +4,13 @@ import algorithm.Evaluator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import model.Ballot;
-import model.Election;
-import model.Option;
-import model.Race;
+import model.*;
 import model.vote.*;
 import org.jetbrains.annotations.NotNull;
+import org.jfree.chart.ChartUtils;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.flow.FlowPlot;
+import org.jfree.data.flow.DefaultFlowDataset;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,6 +22,11 @@ import java.util.stream.Collectors;
 public class Session { // TODO threading issues?
     private Election<Vote> election;
     private Race race; // FIXME ?
+
+    private static final String DATA_DIR_PATH = "./data/";
+    private static final String VOTES_FILE_NAME = "votes.txt";
+    private static final String UNSPENT_FILE_NAME = "unspent.txt";
+    private static final String CHART_FILE_NAME = "flowplot.png";
 
     public void startElection(Set<Option> options) {
         race = new Race("Game", options);
@@ -95,13 +101,28 @@ public class Session { // TODO threading issues?
                 .filter(v -> voters.contains(v.voterName))
                 .forEach(v -> election.addVote(race, v));
 
-        Map<Race,Set<Option>> result = Evaluator.evaluateRankedChoice(election);
-        return result.get(race);
+        Map<Race, Result> results = Evaluator.evaluateRankedChoice(election);
+
+        outputResultsChart(results.get(race).getData());
+
+        return results.get(race).getWinners();
     }
 
-    private static final String DIR_PATH = "./data/";
-    private static final String VOTES_FILE_NAME = "votes.txt";
-    private static final String UNSPENT_FILE_NAME = "unspent.txt";
+    private void outputResultsChart(DefaultFlowDataset<String> data) throws IOException {
+        if (data == null) { return; }
+
+        Path path = Paths.get(DATA_DIR_PATH + CHART_FILE_NAME);
+        Files.createDirectories(Path.of(DATA_DIR_PATH));
+        Files.deleteIfExists(path);
+        Files.createFile(path);
+
+        FlowPlot plot = new FlowPlot(data);
+        JFreeChart chart = new JFreeChart(plot);
+
+        ChartUtils.saveChartAsPNG(path.toFile(), chart, 1200, 1200);
+    }
+
+
 
     /**
      * Records the given voter's current vote in this election as their "default" vote.
@@ -127,7 +148,7 @@ public class Session { // TODO threading issues?
     public void loadDefaultVote(String voterName) throws IOException {
         requireElection();
 
-        Path path = Paths.get(DIR_PATH + VOTES_FILE_NAME);
+        Path path = Paths.get(DATA_DIR_PATH + VOTES_FILE_NAME);
 
         Vote vote = Files.readAllLines(path)
                 .stream()
@@ -210,7 +231,7 @@ public class Session { // TODO threading issues?
     public void setIncludeShadow(boolean includeShadow) { election.setIncludeShadow(includeShadow); }
 
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
-        Path path = Paths.get(DIR_PATH + VOTES_FILE_NAME);
+        Path path = Paths.get(DATA_DIR_PATH + VOTES_FILE_NAME);
 
         List<Vote> recordedVotes = new ArrayList<>();
         if (Files.exists(path)) {
@@ -225,13 +246,13 @@ public class Session { // TODO threading issues?
             recordedVotes.add(vote);
         }
 
-        Files.createDirectories(Path.of(DIR_PATH));
+        Files.createDirectories(Path.of(DATA_DIR_PATH));
         Files.deleteIfExists(path);
         Files.write(path, serializeVotes(recordedVotes).getBytes());
     }
 
     private Set<WeightedVote> loadUnspentVotes() throws IOException {
-        Path path = Paths.get(DIR_PATH + UNSPENT_FILE_NAME);
+        Path path = Paths.get(DATA_DIR_PATH + UNSPENT_FILE_NAME);
 
         Set<WeightedVote> recordedVotes = new HashSet<>();
         if (Files.exists(path)) {
@@ -285,8 +306,8 @@ public class Session { // TODO threading issues?
         // Add new, previously unrecorded votes:
         recordedVotes.addAll(updates);
 
-        Path path = Paths.get(DIR_PATH + UNSPENT_FILE_NAME);
-        Files.createDirectories(Path.of(DIR_PATH));
+        Path path = Paths.get(DATA_DIR_PATH + UNSPENT_FILE_NAME);
+        Files.createDirectories(Path.of(DATA_DIR_PATH));
         Files.deleteIfExists(path);
         Files.write(path, serializeVotes(recordedVotes).getBytes());
     }

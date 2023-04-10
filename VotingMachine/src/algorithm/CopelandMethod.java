@@ -2,10 +2,14 @@ package algorithm;
 
 import model.Option;
 import model.Race;
+import model.Result;
 import model.vote.RankedVote;
 import model.vote.Vote;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CopelandMethod extends EvalAlgorithm<RankedVote> {
@@ -22,7 +26,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
     /** Uses {@link RankedVote#getRankings()} */
     @Override
-    public Set<Option> evaluate(Set<RankedVote> votes) {
+    public Result evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
         Set<Option> vetoes = votes
@@ -39,7 +43,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
         calculateCopelandScores();
 
-        return determineWinners();
+        return new Result(determineWinners(), null);
     }
 
     private void initializeStandings() {

@@ -1,7 +1,7 @@
 package algorithm;
 
-import model.Option;
 import model.Race;
+import model.Result;
 import model.vote.Vote;
 
 import java.util.Set;
@@ -14,5 +14,5 @@ public abstract class EvalAlgorithm<V extends Vote> {
     }
 
     // return a set of tied winners
-    public abstract Set<Option> evaluate(Set<V> votes);
+    public abstract Result evaluate(Set<V> votes);
 }
