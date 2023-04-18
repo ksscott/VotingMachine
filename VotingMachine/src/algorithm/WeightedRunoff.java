@@ -6,6 +6,7 @@ import model.Result;
 import model.vote.RankedVote;
 import model.vote.Vote;
 import model.vote.WeightedVote;
+import org.jetbrains.annotations.NotNull;
 import org.jfree.data.flow.DefaultFlowDataset;
 
 import java.util.*;
@@ -19,7 +20,7 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
     private Set<Vote> voters;
     Set<Option> latestLosers;
     Map<Option, Map<Option,Double>> latestFlows;
-    DefaultFlowDataset<String> resultsData;
+    DefaultFlowDataset<ScoredOption> resultsData;
 
     public WeightedRunoff(Race race) {
         super(race);
@@ -155,7 +156,7 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
                         Double newRating = weightedVote.getNormalizedRating((survivor));
                         if (newRating == null) { continue; }
 
-                        Double flow = newRating * loserRatings.get(loser);
+                        Double flow = newRating * Math.abs(loserRatings.get(loser));
 
                         Double existingFlow = map.get(survivor);
                         existingFlow = existingFlow == null ? 0.0 : existingFlow;
@@ -193,10 +194,15 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
     }
 
     private void recordFlows() {
+        List<ScoredOption> lastTos = resultsData.getDestinations(round - 2);
         for (Option from : latestFlows.keySet()) {
             Map<Option, Double> map = latestFlows.get(from);
+            ScoredOption lastTo = lastTos.stream().filter(to -> from.name().equals(to.option.name())).findAny().orElse(null);
             for (Option to : map.keySet()) {
-                resultsData.setFlow(round-1, from.name(), to.name(), map.get(to));
+                resultsData.setFlow(round-1,
+                        new ScoredOption(from, lastTo == null ? 0.0 : lastTo.score()),
+                        new ScoredOption(to, standings.get(to)),
+                        map.get(to));
             }
         }
     }
@@ -205,7 +211,22 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
      * @return The {@link Option} that has a strict majority of votes; or else <code>null</code>
      */
     private Option strictWinner() {
-        double scoreToWin = voters.size() / 2.0;
+        double scoreToWin = voters.stream().mapToDouble(vote -> {
+            if (vote.isShadow()) {
+                if (vote instanceof WeightedVote weightedVote) {
+                    return standings.keySet()
+                            .stream()
+                            .mapToDouble(o -> {
+                                Double d = weightedVote.getRawRating(o);
+                                return d == null ? 0.0 : d;
+                            })
+                            .sum();
+                }
+            } else { // not shadow
+                return 1.0; // assumption: non-shadow votes have a weight of 1.0
+            }
+            return 0.0;
+        }).sum();
 
         return standings.keySet()
                 .stream()
@@ -237,5 +258,17 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
                 .collect(Collectors.toSet());
         // check for: all winners, no losers
         return losers.size() == standings.size() ? null : losers;
+    }
+
+    static record ScoredOption(@NotNull Option option, @NotNull Double score) implements Comparable<ScoredOption> {
+        @Override
+        public int compareTo(@NotNull ScoredOption o) {
+            return this.score.compareTo(o.score);
+        }
+
+        @Override
+        public String toString() {
+            return option().name();
+        }
     }
 }

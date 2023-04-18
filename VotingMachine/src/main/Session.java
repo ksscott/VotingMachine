@@ -108,7 +108,7 @@ public class Session { // TODO threading issues?
         return results.get(race).getWinners();
     }
 
-    private void outputResultsChart(DefaultFlowDataset<String> data) throws IOException {
+    private <T extends Comparable<T>> void outputResultsChart(DefaultFlowDataset<T> data) throws IOException {
         if (data == null) { return; }
 
         Path path = Paths.get(DATA_DIR_PATH + CHART_FILE_NAME);
@@ -119,7 +119,7 @@ public class Session { // TODO threading issues?
         FlowPlot plot = new FlowPlot(data);
         JFreeChart chart = new JFreeChart(plot);
 
-        ChartUtils.saveChartAsPNG(path.toFile(), chart, 1200, 1200);
+        ChartUtils.saveChartAsPNG(path.toFile(), chart, data.getStageCount()*150, 1300);
     }
 
 

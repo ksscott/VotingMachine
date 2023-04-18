@@ -7,14 +7,14 @@ import java.util.Set;
 
 public class Result {
     private Set<Option> winners;
-    private DefaultFlowDataset<String> data;
+    private DefaultFlowDataset data;
 
-    public Result(Set<Option> winners, DefaultFlowDataset<String> data) {
+    public Result(Set<Option> winners, DefaultFlowDataset data) {
         this.winners = winners;
         this.data = data;
     }
 
     public Set<Option> getWinners() { return new HashSet<>(winners); }
 
-    public DefaultFlowDataset<String> getData() { return data; }
+    public DefaultFlowDataset getData() { return data; }
 }
