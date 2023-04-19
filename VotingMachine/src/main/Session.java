@@ -209,6 +209,8 @@ public class Session { // TODO threading issues?
 
     public void setIncludeShadow(boolean includeShadow) { election.setIncludeShadow(includeShadow); }
 
+    public int numVoters() { return election.getVotes(race, false).size(); }
+
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
         Path path = Paths.get(DIR_PATH + VOTES_FILE_NAME);
 
