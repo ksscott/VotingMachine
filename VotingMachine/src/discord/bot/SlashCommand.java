@@ -121,12 +121,28 @@ public enum SlashCommand {
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,
             (event, session) -> {
-                String winnersString = session.pickWinner()
+                Set<Option> winners = session.pickWinner();
+                Set<Game> winningGames = winners
+                        .stream()
+                        .map(Option::name)
+                        .map(Game::interpret)
+                        .map(Optional::orElseThrow)
+                        .collect(Collectors.toSet());
+
+                String winnersString = winners
                                 .stream()
-                                .map(Option::name)
+                                .map(option -> "**" + option.name() + "**")
                                 .sorted()
                                 .collect(Collectors.joining(", and "));
-                event.reply("The winner is: " + winnersString).queue();
+
+                int numVoters = session.numVoters();
+                String warning = winningGames
+                        .stream()
+                        .filter(game -> game.getMaxPlayers() < numVoters && game.getMaxPlayers() > 0)
+                        .map(game -> "\n*Warning:* " + game.getTitle() + " has a maximum number of players of " + game.getMaxPlayers())
+                        .collect(Collectors.joining());
+
+                event.reply("The winner is: " + winnersString + warning).queue();
             }),
     SAVE("save", "Record your current vote as your default preferred vote for future elections",
             data -> data,
