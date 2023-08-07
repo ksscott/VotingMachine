@@ -217,6 +217,19 @@ public enum SlashCommand {
 
                 event.reply("Recorded winner of the last election: " + game.name()).queue();
             }),
+    RIG("rig", "Cause a game to automatically win the election",
+        data -> data.addOption(OptionType.STRING, "game", "The automatically winning game", true),
+        (event, session) -> {
+            String gameString = event.getOption("game").getAsString();
+            Option option = session.interpret(gameString).orElse(null);
+            if (option == null) {
+                event.reply("Try again, Mr. Trump").setEphemeral(true).queue();
+                return;
+            }
+
+            String username = event.getUser().getName();
+            event.reply(username + " has rigged the vote for: " + option.name()).queue();
+            }),
     HELP("help", "Lists out available commands",
             data -> data,
             (event, session) -> {
