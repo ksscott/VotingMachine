@@ -277,6 +277,14 @@ public class Session { // TODO threading issues?
                 }
 
                 double newRating = unspent + pastUnspent;
+
+                // reduce unspent weight unless voter reinforced it this election
+                boolean votedAgainstPastVote = (pastUnspent > 0.0 && unspent <= 0.0) || (pastUnspent < 0.0 && unspent >= 0.0);
+                if (votedAgainstPastVote) {
+                    newRating *= 0.5;
+                }
+
+                // record or clear:
                 if (newRating == 0.0) {
                     vote.clearRating(option);
                 } else {
