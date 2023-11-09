@@ -175,7 +175,19 @@ public class Session { // TODO threading issues?
     }
 
     public Optional<Option> interpret(String input) {
-        return getOptions().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
+        return getOptions()
+                .stream()
+                .sorted((o1, o2) -> {
+                    String one = o1.name().toLowerCase();
+                    String two = o2.name().toLowerCase();
+                    if (one.startsWith(input.toLowerCase())) return -1;
+                    if (two.startsWith(input.toLowerCase())) return +1;
+                    if (one.contains(input)) return -1;
+                    if (two.contains(input)) return +1;
+                    return 0;
+                })
+                .findFirst();
+//                .filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
     }
 
     public Vote getVote(String voterName) {
