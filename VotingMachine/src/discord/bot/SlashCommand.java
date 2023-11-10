@@ -118,18 +118,35 @@ public enum SlashCommand {
                 }
 
                 String username = event.getUser().getName();
-                session.veto(username, option);
-                event.reply(username + " vetoed the game: " + option.name()).queue();
+                boolean isVetoed = session.veto(username, option);
+                String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
+                event.reply(username + vetoed + " the game: " + option.name()).queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,
             (event, session) -> {
-                String winnersString = session.pickWinner()
+                Set<Option> winners = session.pickWinner();
+                Set<Game> winningGames = winners
+                        .stream()
+                        .map(Option::name)
+                        .map(Game::interpret)
+                        .map(Optional::orElseThrow)
+                        .collect(Collectors.toSet());
+
+                String winnersString = winners
                                 .stream()
-                                .map(Option::name)
+                                .map(option -> "**" + option.name() + "**")
                                 .sorted()
                                 .collect(Collectors.joining(", and "));
-                event.reply("The winner is: " + winnersString).queue();
+
+                int numVoters = session.numVoters();
+                String warning = winningGames
+                        .stream()
+                        .filter(game -> game.getMaxPlayers() < numVoters && game.getMaxPlayers() > 0)
+                        .map(game -> "\n*Warning:* " + game.getTitle() + " has a maximum number of players of " + game.getMaxPlayers())
+                        .collect(Collectors.joining());
+
+                event.reply("The winner is: " + winnersString + warning).queue();
                 File resultsFile = Paths.get("./data/flowplot.png").toFile(); // FIXME hard coded
                 event.getChannel().sendFiles(FileUpload.fromData(resultsFile)).queue();
             }),
@@ -205,6 +222,19 @@ public enum SlashCommand {
                 // FIXME There's a bug in here somewhere: "Error: null"
 
                 event.reply("Recorded winner of the last election: " + game.name()).queue();
+            }),
+    RIG("rig", "Cause a game to automatically win the election",
+        data -> data.addOption(OptionType.STRING, "game", "The automatically winning game", true),
+        (event, session) -> {
+            String gameString = event.getOption("game").getAsString();
+            Option option = session.interpret(gameString).orElse(null);
+            if (option == null) {
+                event.reply("Try again, Mr. Trump").setEphemeral(true).queue();
+                return;
+            }
+
+            String username = event.getUser().getName();
+            event.reply(username + " has rigged the vote for: " + option.name()).queue();
             }),
     HELP("help", "Lists out available commands",
             data -> data,

@@ -79,14 +79,17 @@ public class Session { // TODO threading issues?
         addVote((RankedVote) vote);
     }
 
-    public void veto(String voterName, Option option) {
+    // Return true iff the voter is now currently vetoing the given option after this returns
+    public boolean veto(String voterName, Option option) {
         requireElection();
 
         Vote vote = getVote(voterName);
         if (vote == null) {
             vote = new WeightedVote(voterName);
         }
-        vote.veto(option);
+        addVote((RankedVote) vote);
+
+        return vote.vetoToggle(option);
     }
 
     public Set<Option> pickWinner() throws IOException {
@@ -196,7 +199,19 @@ public class Session { // TODO threading issues?
     }
 
     public Optional<Option> interpret(String input) {
-        return getOptions().stream().filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
+        return getOptions()
+                .stream()
+                .sorted((o1, o2) -> {
+                    String one = o1.name().toLowerCase();
+                    String two = o2.name().toLowerCase();
+                    if (one.startsWith(input.toLowerCase())) return -1;
+                    if (two.startsWith(input.toLowerCase())) return +1;
+                    if (one.contains(input)) return -1;
+                    if (two.contains(input)) return +1;
+                    return 0;
+                })
+                .findFirst();
+//                .filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
     }
 
     public Vote getVote(String voterName) {
@@ -229,6 +244,8 @@ public class Session { // TODO threading issues?
     }
 
     public void setIncludeShadow(boolean includeShadow) { election.setIncludeShadow(includeShadow); }
+
+    public int numVoters() { return election.getVotes(race, false).size(); }
 
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
         Path path = Paths.get(DATA_DIR_PATH + VOTES_FILE_NAME);
@@ -296,6 +313,14 @@ public class Session { // TODO threading issues?
                 }
 
                 double newRating = unspent + pastUnspent;
+
+                // reduce unspent weight unless voter reinforced it this election
+                boolean votedAgainstPastVote = (pastUnspent > 0.0 && unspent <= 0.0) || (pastUnspent < 0.0 && unspent >= 0.0);
+                if (votedAgainstPastVote) {
+                    newRating *= 0.5;
+                }
+
+                // record or clear:
                 if (newRating == 0.0) {
                     vote.clearRating(option);
                 } else {
