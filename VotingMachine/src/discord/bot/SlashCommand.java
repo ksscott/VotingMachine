@@ -115,8 +115,9 @@ public enum SlashCommand {
                 }
 
                 String username = event.getUser().getName();
-                session.veto(username, option);
-                event.reply(username + " vetoed the game: " + option.name()).queue();
+                boolean isVetoed = session.veto(username, option);
+                String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
+                event.reply(username + vetoed + " the game: " + option.name()).queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
             data -> data,

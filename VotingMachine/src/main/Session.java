@@ -73,14 +73,17 @@ public class Session { // TODO threading issues?
         addVote((RankedVote) vote);
     }
 
-    public void veto(String voterName, Option option) {
+    // Return true iff the voter is now currently vetoing the given option after this returns
+    public boolean veto(String voterName, Option option) {
         requireElection();
 
         Vote vote = getVote(voterName);
         if (vote == null) {
             vote = new WeightedVote(voterName);
         }
-        vote.veto(option);
+        addVote((RankedVote) vote);
+
+        return vote.vetoToggle(option);
     }
 
     public Set<Option> pickWinner() throws IOException {

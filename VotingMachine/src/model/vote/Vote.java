@@ -25,6 +25,17 @@ public abstract class Vote implements Serializable {
 
 	public void veto(Option option) { vetoes.add(option); }
 
+	// Return true iff the given option is now vetoed after this returns
+	public boolean vetoToggle(Option option) {
+		if (vetoes.contains(option)) {
+			vetoes.remove(option);
+			return false;
+		} else {
+			vetoes.add(option);
+			return true;
+		}
+	}
+
 	public Set<Option> getVetoes() { return Collections.unmodifiableSet(vetoes); }
 
 	public void clearVetoes() { this.vetoes = new HashSet<>(); }
