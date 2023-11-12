@@ -1,6 +1,6 @@
 package model;
 
-import java.util.*;
+import java.util.Set;
 
 public record Ballot(String name, Set<Race> races) {
 
