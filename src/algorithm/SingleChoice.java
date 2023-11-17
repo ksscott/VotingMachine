@@ -2,6 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
+import model.Result;
 import model.vote.SingleVote;
 import model.vote.Vote;
 
@@ -14,7 +15,7 @@ public class SingleChoice extends EvalAlgorithm<Vote> {
     }
 
     @Override
-    public Set<Option> evaluate(Set<Vote> votes) {
+    public Result evaluate(Set<Vote> votes) {
         Map<Option, Integer> count = new HashMap<>();
         race.options().forEach(option -> count.put(option, 0));
 
@@ -41,6 +42,6 @@ public class SingleChoice extends EvalAlgorithm<Vote> {
             }
         }
 
-        return winners;
+        return new Result(winners, null);
     }
 }

@@ -8,7 +8,10 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.utils.FileUpload;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -144,6 +147,8 @@ public enum SlashCommand {
                         .collect(Collectors.joining());
 
                 event.reply("The winner is: " + winnersString + warning).queue();
+                File resultsFile = Paths.get("./data/flowplot.png").toFile(); // FIXME hard coded
+                event.getChannel().sendFiles(FileUpload.fromData(resultsFile)).queue();
             }),
     SAVE("save", "Record your current vote as your default preferred vote for future elections",
             data -> data,

@@ -48,3 +48,4 @@ Currently, the Discord bot only supports elections with a single race.
 
 ## Dependencies
 * [JDA](https://github.com/discord-jda/JDA)
+* [JFreeChart](https://www.jfree.org/jfreechart/)

@@ -2,6 +2,7 @@ package algorithm;
 
 import model.Option;
 import model.Race;
+import model.Result;
 import model.vote.RankedVote;
 import model.vote.Vote;
 
@@ -25,7 +26,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
     /** Uses {@link RankedVote#getRankings()} */
     @Override
-    public Set<Option> evaluate(Set<RankedVote> votes) {
+    public Result evaluate(Set<RankedVote> votes) {
         initializeStandings();
 
         Set<Option> vetoes = votes
@@ -42,7 +43,7 @@ public class CopelandMethod extends EvalAlgorithm<RankedVote> {
 
         calculateCopelandScores();
 
-        return determineWinners();
+        return new Result(determineWinners(), null);
     }
 
     private void initializeStandings() {
