@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Session { // TODO threading issues?
@@ -27,11 +28,24 @@ public class Session { // TODO threading issues?
     private static final String VOTES_FILE_NAME = "votes.txt";
     private static final String UNSPENT_FILE_NAME = "unspent.txt";
     private static final String CHART_FILE_NAME = "flowplot.png";
+    private static final String SAVED_OPTIONS_FILE_NAME = "savedOptions.txt";
 
     public void startElection(Set<Option> options) {
         race = new Race("Game", options);
         Ballot ballot = new Ballot("Game to Play", race);
         election = new Election<>(ballot);
+    }
+
+    public void startElectionWithSaved() {
+        Set<Option> options = new HashSet<>();
+        try {
+            options = loadSavedOptions();
+        } catch (IOException e) {
+            System.out.println("error loading saved options");
+            startElection(options);
+            throw new RuntimeException("Error reading file", e);
+        }
+        startElection(options);
     }
 
     public Set<Option> getOptions() { return race.options(); }
@@ -151,11 +165,10 @@ public class Session { // TODO threading issues?
     public void loadDefaultVote(String voterName) throws IOException {
         requireElection();
 
-        Path path = Paths.get(DATA_DIR_PATH + VOTES_FILE_NAME);
+        List<Vote> recordedVotes = deserializeFile(DATA_DIR_PATH + VOTES_FILE_NAME, this::deserializeVote);
 
-        Vote vote = Files.readAllLines(path)
+        Vote vote = recordedVotes
                 .stream()
-                .map(this::deserializeVote)
                 .filter(Objects::nonNull)
                 .filter(v -> v.voterName.equals(voterName))
                 .findAny()
@@ -200,8 +213,7 @@ public class Session { // TODO threading issues?
 
     public Optional<Option> interpret(String input) {
         return getOptions()
-                .stream()
-                .sorted((o1, o2) -> {
+                .stream().min((o1, o2) -> {
                     String one = o1.name().toLowerCase();
                     String two = o2.name().toLowerCase();
                     if (one.startsWith(input.toLowerCase())) return -1;
@@ -209,8 +221,7 @@ public class Session { // TODO threading issues?
                     if (one.contains(input)) return -1;
                     if (two.contains(input)) return +1;
                     return 0;
-                })
-                .findFirst();
+                });
 //                .filter(option -> option.name().toLowerCase().contains(input.toLowerCase())).findAny();
     }
 
@@ -250,18 +261,10 @@ public class Session { // TODO threading issues?
     private void replaceDefaultVote(String voterName, Vote vote) throws IOException {
         Path path = Paths.get(DATA_DIR_PATH + VOTES_FILE_NAME);
 
-        List<Vote> recordedVotes = new ArrayList<>();
-        if (Files.exists(path)) {
-            recordedVotes = Files.readAllLines(path)
-                    .stream()
-                    .map(this::deserializeVote)
-                    .filter(Objects::nonNull)
-                    .filter(v -> !v.voterName.equals(voterName))
-                    .collect(Collectors.toList());
-        }
-        if (vote != null) {
-            recordedVotes.add(vote);
-        }
+        List<Vote> recordedVotes = deserializeFile(DATA_DIR_PATH + VOTES_FILE_NAME, this::deserializeVote);
+        recordedVotes.removeIf(v -> v.voterName.equals(voterName));
+
+        if (vote != null) recordedVotes.add(vote);
 
         Files.createDirectories(Path.of(DATA_DIR_PATH));
         Files.deleteIfExists(path);
@@ -269,18 +272,7 @@ public class Session { // TODO threading issues?
     }
 
     private Set<WeightedVote> loadUnspentVotes() throws IOException {
-        Path path = Paths.get(DATA_DIR_PATH + UNSPENT_FILE_NAME);
-
-        Set<WeightedVote> recordedVotes = new HashSet<>();
-        if (Files.exists(path)) {
-            recordedVotes = Files.readAllLines(path)
-                    .stream()
-                    .map(this::deserializeVote)
-                    .filter(Objects::nonNull)
-                    .map(WeightedVote::fromVote)
-                    .collect(Collectors.toSet());
-        }
-        return recordedVotes;
+        return new HashSet<>(deserializeFile(DATA_DIR_PATH + UNSPENT_FILE_NAME, this::deserializeWeightedVote));
     }
 
     private void updateUnspentVotes(@NotNull Set<WeightedVote> updates, @NotNull Option winner) throws IOException {
@@ -337,16 +329,21 @@ public class Session { // TODO threading issues?
         Files.write(path, serializeVotes(recordedVotes).getBytes());
     }
 
+    private Set<Option> loadSavedOptions() throws IOException {
+        return new HashSet<>(deserializeFile(DATA_DIR_PATH + SAVED_OPTIONS_FILE_NAME, this::deserializeOption));
+    }
+
     private void requireElection() {
         if (election == null) { throw new IllegalStateException("Start an election first"); }
     }
 
     private static final List<Class> VOTE_TYPES = Arrays.asList(WeightedVote.class, SimpleRankingVote.class, SingleVote.class);
+
+    //region Serialization
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     private Vote deserializeVote(String input) throws RuntimeException {
-        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
-        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
         try {
             for (Class type : VOTE_TYPES) {
                 Vote vote = (Vote) mapper.readValue(input, type);
@@ -359,6 +356,13 @@ public class Session { // TODO threading issues?
         }
 
         return null;
+    }
+
+    private WeightedVote deserializeWeightedVote(String input) {
+        Vote vote = deserializeVote(input);
+        if (vote == null) return null;
+        if (vote instanceof WeightedVote weighted) return weighted;
+        return WeightedVote.fromVote(vote);
     }
 
     private String serializeVotes(Collection<? extends Vote> votes) {
@@ -374,4 +378,33 @@ public class Session { // TODO threading issues?
             throw new RuntimeException("Error processing JSON", jpe);
         }
     }
+
+    private Option deserializeOption(String input) {
+        try {
+            return mapper.readValue(input, Option.class);
+        } catch (JsonProcessingException jpe) {
+            System.out.println("error deserializing option: " + input);
+            throw new RuntimeException("Error processing JSON", jpe);
+        }
+    }
+
+    @NotNull
+    private <T> List<T> deserializeFile(String filePath, Function<String,T> deserializer) throws IOException {
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) return new ArrayList<>();
+        return deserializeLines(Files.readAllLines(path), deserializer);
+    }
+
+    @NotNull
+    private <T> List<T> deserializeLines(List<String> input, Function<String,T> deserializer) {
+        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
+        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+
+        return input.stream()
+                .map(deserializer)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    //endregion
 }
