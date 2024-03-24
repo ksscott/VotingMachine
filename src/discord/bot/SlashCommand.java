@@ -37,17 +37,30 @@ public enum SlashCommand {
                         .collect(Collectors.joining("\n"));
                 event.reply(stringList).setEphemeral(true).queue();
             }),
+    CANDIDATES("candidates", "Lists out the candidates in this election",
+            data -> data,
+            (event, session) -> {
+                String stringList = session.getOptions()
+                        .stream()
+                        .map(Option::name)
+                        .sorted()
+                        .collect(Collectors.joining("\n"));
+                event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
+            }),
     SUGGEST("suggest", "Add an option to this election",
             data -> data.addOption(OptionType.STRING, "game", "The game to suggest", true),
             (event, session) -> {
                 String gameString = event.getOption("game").getAsString();
 
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 session.suggest(new Option(gameString));
-                event.reply(username + " suggested the game: " + gameString).queue();
+                event.reply(username + " suggested: " + gameString).queue();
             }),
     NEW_POLL("new", "Begins a new election",
-            data -> data,
+            data -> {
+                data.addOption(OptionType.STRING, "prompt", "Write a prompt for this poll");
+                return data;
+            },
             (event, session) -> {
                 Set<Option> options = Arrays.stream(Game.values())
                         .map(Game::getTitle)
@@ -55,10 +68,14 @@ public enum SlashCommand {
                         .collect(Collectors.toSet());
                 session.startElection(options);
 
+                String prompt = event.getOption("prompt").getAsString();
+                prompt = prompt == null ? "" : prompt+"\n";
+
                 String message = "New poll started! \n" +
-                        "Type /vote to vote for a list of games. \n" +
-                        "Type /rate to build a vote by rating one game at a time. \n" +
-                        "Type /games to see a list of options.";
+                        prompt +
+                        "Type /vote to vote for a list of options. \n" +
+                        "Type /rate to build a vote by rating one option at a time. \n" +
+                        "Type /candidates to see a list of all candidates.";
 
                 event.reply(message).queue();
             }),
@@ -72,7 +89,7 @@ public enum SlashCommand {
                 return data;
             },
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 List<Option> gamesList = event.getOptions()
                         .stream()
                         .map(OptionMapping::getAsString)
@@ -83,19 +100,22 @@ public enum SlashCommand {
 
                 session.addVote(username, gamesList);
 
-                String namesList = gamesList.stream().map(Option::name).collect(Collectors.joining("\n"));
-                event.reply("Voted for game: " + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
-                event.getChannel().sendMessage(username + " voted.").queue();
+                String namesList = "";
+                int i=1;
+                for (Option option : gamesList) {
+                    namesList += i++ + ". " + option.name() + "\n";
+                };
+                event.reply(username + " submitted a ranked vote for:\n" + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
             }),
-    RATE("rate", "Build a weighted vote one game at at time; accepts integers",
+    RATE("rate", "Build a weighted vote one candidate at at time; accepts integers",
             data -> {
-                data.addOption(OptionType.STRING, "game", "Game to rate", true);
-                data.addOption(OptionType.INTEGER, "rating", "Integer rating for this game", true);
+                data.addOption(OptionType.STRING, "candidate", "Candidate to rate", true);
+                data.addOption(OptionType.INTEGER, "rating", "Integer rating for this candidate", true);
                 return data;
             },
             (event, session) -> {
-                String username = event.getUser().getName();
-                String gameString = event.getOption("game").getAsString();
+                String username = event.getUser().getEffectiveName();
+                String gameString = event.getOption("candidate").getAsString();
                 Option option = session.interpret(gameString).orElse(null);
                 if (option == null) {
                     event.reply("Game not recognized: " + gameString).setEphemeral(true).queue();
@@ -105,7 +125,7 @@ public enum SlashCommand {
 
                 session.rate(username, option, rating);
 
-                event.reply("Rated game: " + option.name() + " -> " + rating)/*.setEphemeral(true)*/.queue();
+                event.reply(username + " rated option: " + option.name() + " -> " + rating)/*.setEphemeral(true)*/.queue();
             }),
     VETO("veto", "Cause a game to automatically lose the election",
             data -> data.addOption(OptionType.STRING, "game", "The game to forbid", true),
@@ -117,7 +137,7 @@ public enum SlashCommand {
                     return;
                 }
 
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 boolean isVetoed = session.veto(username, option);
                 String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
                 event.reply(username + vetoed + " the game: " + option.name()).queue();
@@ -153,21 +173,21 @@ public enum SlashCommand {
     SAVE("save", "Record your current vote as your default preferred vote for future elections",
             data -> data,
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 session.saveDefaultVote(username);
                 event.reply("Default vote saved for " + username).queue();
             }),
     LOAD("load", "Load your default preferred vote",
             data -> data,
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 session.loadDefaultVote(username);
                 event.reply("Default vote loaded for " + username).queue();
             }),
     CURRENT_VOTE("current-vote", "List your current vote in this election",
             data -> data,
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 Vote vote = session.getVote(username);
                 String message;
                 if (vote != null) {
@@ -182,7 +202,7 @@ public enum SlashCommand {
     WAT("wat", "List your current vote in this election",
             data -> data,
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 Vote vote = session.getVote(username);
                 String message;
                 if (vote != null) {
@@ -197,14 +217,14 @@ public enum SlashCommand {
     CLEAR("clear", "Clear your current vote in this election",
             data -> data,
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 session.clearCurrentVote(username);
                 event.reply("Cleared current vote for " + username).queue();
             }),
     CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
             data -> data,
             (event, session) -> {
-                String username = event.getUser().getName();
+                String username = event.getUser().getEffectiveName();
                 session.clearDefaultVote(username);
                 event.reply("Cleared default vote for " + username).queue();
             }),
@@ -233,7 +253,7 @@ public enum SlashCommand {
                 return;
             }
 
-            String username = event.getUser().getName();
+            String username = event.getUser().getEffectiveName();
             event.reply(username + " has rigged the vote for: " + option.name()).queue();
             }),
     HELP("help", "Lists out available commands",
