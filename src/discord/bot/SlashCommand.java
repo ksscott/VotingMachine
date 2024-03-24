@@ -20,13 +20,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public enum SlashCommand {
-//    PING("ping", "Calculate ping of the bot", (event) -> {
-//        long time = System.currentTimeMillis();
-//        event.reply("Pong!").setEphemeral(true) // reply or acknowledge
-//                .flatMap(v ->
-//                        event.getHook().editOriginalFormat("Pong: %d ms", System.currentTimeMillis() - time) // then edit original
-//                ).queue();
-//    }),
     GAMES_LIST("games", "Lists out the games that we can play",
             data -> data,
             (event, session) -> {
