@@ -20,7 +20,8 @@ public class REPL {
 	 * Select a game to play with friends
 	 */
 	private static void selectFriendsGame() {
-		System.out.println("Choosing a game to play with friends");
+		String prompt = "Choose a game to play with friends";
+		System.out.println(prompt);
 
 		Scanner scanner = new Scanner(System.in);
 		List<Game> gameList = Game.shortList();
@@ -30,7 +31,7 @@ public class REPL {
 				.map(Game::getTitle)
 				.map(Option::new)
 				.collect(Collectors.toSet());
-		session.startElection(options);
+		session.startElection(prompt, options);
 
 		System.out.println();
 		System.out.println("The options are:");
@@ -77,7 +78,7 @@ public class REPL {
 		}
 
 		// determine winner(s)
-		List<String> winningNames = null;
+		List<String> winningNames;
 		try {
 			winningNames = session.pickWinner()
 					.stream()

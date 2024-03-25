@@ -12,10 +12,7 @@ import net.dv8tion.jda.api.utils.FileUpload;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -40,6 +37,12 @@ public enum SlashCommand {
                         .collect(Collectors.joining("\n"));
                 event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
             }),
+    STORE_CANDIDATES("store-candidates", "Stores the candidates in this election for future elections",
+            data -> data,
+            (event, session) -> {
+                session.storeCandidates();
+                event.reply("Stored this election's candidates for future use").queue();
+            }),
     SUGGEST("suggest", "Add an option to this election",
             data -> data.addOption(OptionType.STRING, "game", "The game to suggest", true),
             (event, session) -> {
@@ -52,25 +55,34 @@ public enum SlashCommand {
     NEW_POLL("new", "Begins a new election",
             data -> {
                 data.addOption(OptionType.STRING, "prompt", "Write a prompt for this poll");
+                data.addOption(OptionType.BOOLEAN, "stored-candidates", "Use stored candidates from a previous poll; defaults to True");
                 return data;
             },
             (event, session) -> {
-                Set<Option> options = Arrays.stream(Game.values())
-                        .map(Game::getTitle)
-                        .map(Option::new)
-                        .collect(Collectors.toSet());
-                session.startElection(options);
+                OptionMapping storedBool = event.getOption("stored-candidates");
+                OptionMapping prompt = event.getOption("prompt");
+                String promptString = prompt == null ? "" : prompt.getAsString();
 
-                String prompt = event.getOption("prompt").getAsString();
-                prompt = prompt == null ? "" : prompt+"\n";
+                Set<Option> options = null;
+                if (storedBool != null && !storedBool.getAsBoolean()) {
+                    // Default to list of Games to play
+                    // Other behavior is possible here, including starting an empty election
+                    options = Game.shortList().stream()
+                            .map(Game::getTitle)
+                            .map(Option::new)
+                            .collect(Collectors.toSet());
+                }
+                session.startElection(promptString, options);
 
-                String message = "New poll started! \n" +
-                        prompt +
-                        "Type /vote to vote for a list of options. \n" +
-                        "Type /rate to build a vote by rating one option at a time. \n" +
-                        "Type /candidates to see a list of all candidates.";
+                StringJoiner joiner = new StringJoiner("\n");
 
-                event.reply(message).queue();
+                joiner.add("New poll started!");
+                if (!promptString.equals("")) joiner.add(promptString);
+                joiner.add("Type /vote to vote for a list of options.");
+                joiner.add("Type /rate to build a vote by rating one option at a time.");
+                joiner.add("Type /candidates to see a list of all candidates.");
+
+                event.reply(joiner.toString()).queue();
             }),
     VOTE("vote", "Submit a vote for what game(s) to play",
             data -> {
@@ -97,7 +109,7 @@ public enum SlashCommand {
                 int i=1;
                 for (Option option : gamesList) {
                     namesList += i++ + ". " + option.name() + "\n";
-                };
+                }
                 event.reply(username + " submitted a ranked vote for:\n" + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
             }),
     RATE("rate", "Build a weighted vote one candidate at at time; accepts integers",
@@ -142,7 +154,7 @@ public enum SlashCommand {
                 Set<Game> winningGames = winners
                         .stream()
                         .map(Option::name)
-                        .map(Game::interpret)
+                        .map(Game::interpret) // FIXME make this agnostic to Games
                         .map(Optional::orElseThrow)
                         .collect(Collectors.toSet());
 
