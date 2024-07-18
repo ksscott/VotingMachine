@@ -122,6 +122,8 @@ public class Session { // TODO threading considerations
 
     public void setIncludeShadow(boolean includeShadow) { election.setIncludeShadow(includeShadow); }
 
+    public boolean toggleIncludeShadow() { return election.toggleIncludeShadow(); }
+
     private void requireElection() {
         if (election == null) throw new IllegalStateException("Start an election first");
     }

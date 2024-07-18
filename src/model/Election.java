@@ -13,11 +13,12 @@ public class Election<V extends Vote> {
 
 	private Ballot ballot;
 	private Map<Race, Set<V>> votes;
-	private boolean includeShadow = true;
+	private boolean includeShadow;
 
 	public Election(Ballot ballot) {
 		this.ballot = ballot;
 		this.votes = new HashMap<>();
+		this.includeShadow = true;
 		for (Race race : ballot.races()) {
 			votes.put(race, new HashSet<>());
 		}
@@ -62,9 +63,15 @@ public class Election<V extends Vote> {
 
 	public void setIncludeShadow(boolean includeShadow) { this.includeShadow = includeShadow; }
 
+	public boolean toggleIncludeShadow() {
+		includeShadow = !this.includeShadow;
+		return includeShadow;
+	}
+
 	private void requireRace(Race race) {
 		if (!ballot.races().contains(race)) {
 			throw new IllegalArgumentException("Race does not appear on this ballot");
 		}
 	}
+
 }

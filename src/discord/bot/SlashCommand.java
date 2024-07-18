@@ -17,6 +17,38 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public enum SlashCommand {
+    NEW_POLL("new", "Begins a new election",
+            data -> {
+                data.addOption(OptionType.STRING, "prompt", "Write a prompt for this poll");
+                data.addOption(OptionType.BOOLEAN, "stored-candidates", "Use stored candidates from a previous poll; defaults to True");
+                return data;
+            },
+            (event, session) -> {
+                OptionMapping storedBool = event.getOption("stored-candidates");
+                OptionMapping prompt = event.getOption("prompt");
+                String promptString = prompt == null ? "" : prompt.getAsString();
+
+                Set<Option> options = null;
+                if (storedBool != null && !storedBool.getAsBoolean()) {
+                    // Default to list of Games to play
+                    // Other behavior is possible here, including starting an empty election
+                    options = Game.shortList().stream()
+                            .map(Game::getTitle)
+                            .map(Option::new)
+                            .collect(Collectors.toSet());
+                }
+                session.startElection(promptString, options);
+
+                StringJoiner joiner = new StringJoiner("\n");
+
+                joiner.add("New poll started!");
+                if (!promptString.equals("")) joiner.add(promptString);
+                joiner.add("Type /vote to vote for a list of options.");
+                joiner.add("Type /rate to build a vote by rating one option at a time.");
+                joiner.add("Type /candidates to see a list of all candidates.");
+
+                event.reply(joiner.toString()).queue();
+            }),
     GAMES_LIST("games", "Lists out the games that we can play",
             data -> data,
             (event, session) -> {
@@ -51,38 +83,6 @@ public enum SlashCommand {
                 String username = event.getUser().getEffectiveName();
                 session.suggest(new Option(gameString));
                 event.reply(username + " suggested: " + gameString).queue();
-            }),
-    NEW_POLL("new", "Begins a new election",
-            data -> {
-                data.addOption(OptionType.STRING, "prompt", "Write a prompt for this poll");
-                data.addOption(OptionType.BOOLEAN, "stored-candidates", "Use stored candidates from a previous poll; defaults to True");
-                return data;
-            },
-            (event, session) -> {
-                OptionMapping storedBool = event.getOption("stored-candidates");
-                OptionMapping prompt = event.getOption("prompt");
-                String promptString = prompt == null ? "" : prompt.getAsString();
-
-                Set<Option> options = null;
-                if (storedBool != null && !storedBool.getAsBoolean()) {
-                    // Default to list of Games to play
-                    // Other behavior is possible here, including starting an empty election
-                    options = Game.shortList().stream()
-                            .map(Game::getTitle)
-                            .map(Option::new)
-                            .collect(Collectors.toSet());
-                }
-                session.startElection(promptString, options);
-
-                StringJoiner joiner = new StringJoiner("\n");
-
-                joiner.add("New poll started!");
-                if (!promptString.equals("")) joiner.add(promptString);
-                joiner.add("Type /vote to vote for a list of options.");
-                joiner.add("Type /rate to build a vote by rating one option at a time.");
-                joiner.add("Type /candidates to see a list of all candidates.");
-
-                event.reply(joiner.toString()).queue();
             }),
     VOTE("vote", "Submit a vote for what game(s) to play",
             data -> {
@@ -147,63 +147,6 @@ public enum SlashCommand {
                 String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
                 event.reply(username + vetoed + " the game: " + option.name()).queue();
             }),
-    PICK("pick", "Tally votes and pick the winning game(s)",
-            data -> data,
-            (event, session) -> {
-                Set<Option> winners = session.pickWinner();
-                Set<Game> winningGames = winners
-                        .stream()
-                        .map(Option::name)
-                        .map(Game::interpret) // FIXME make this agnostic to Games
-                        .map(Optional::orElseThrow)
-                        .collect(Collectors.toSet());
-
-                String winnersString = winners
-                                .stream()
-                                .map(option -> "**" + option.name() + "**")
-                                .sorted()
-                                .collect(Collectors.joining(", and "));
-
-                int numVoters = session.numVoters();
-                String warning = winningGames
-                        .stream()
-                        .filter(game -> game.getMaxPlayers() < numVoters && game.getMaxPlayers() > 0)
-                        .map(game -> "\n*Warning:* " + game.getTitle() + " has a maximum number of players of " + game.getMaxPlayers())
-                        .collect(Collectors.joining());
-
-                event.reply("The winner is: " + winnersString + warning).queue();
-                File resultsFile = Paths.get("./data/flowplot.png").toFile(); // FIXME hard coded
-                event.getChannel().sendFiles(FileUpload.fromData(resultsFile)).queue();
-            }),
-    SAVE("save", "Record your current vote as your default preferred vote for future elections",
-            data -> data,
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.saveDefaultVote(username);
-                event.reply("Default vote saved for " + username).queue();
-            }),
-    LOAD("load", "Load your default preferred vote",
-            data -> data,
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.loadDefaultVote(username);
-                event.reply("Default vote loaded for " + username).queue();
-            }),
-    CURRENT_VOTE("current-vote", "List your current vote in this election",
-            data -> data,
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                Vote vote = session.getVote(username);
-                String message;
-                if (vote != null) {
-                    message = "Your current vote is:\n" + vote;
-                } else {
-                    message = "You haven't cast a vote in the current election. \n" +
-                            "Type /vote to vote for a list of games. \n" +
-                            "Type /rate to build a vote by rating one game at a time.";
-                }
-                event.reply(message).setEphemeral(true).queue();
-            }),
     WAT("wat", "List your current vote in this election",
             data -> data,
             (event, session) -> {
@@ -226,12 +169,83 @@ public enum SlashCommand {
                 session.clearCurrentVote(username);
                 event.reply("Cleared current vote for " + username).queue();
             }),
+    SAVE("save", "Record your current vote as your default preferred vote for future elections",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                session.saveDefaultVote(username);
+                event.reply("Default vote saved for " + username).queue();
+            }),
+    LOAD("load", "Load your default preferred vote",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                session.loadDefaultVote(username);
+                event.reply("Default vote loaded for " + username).queue();
+            }),
     CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
             data -> data,
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
                 session.clearDefaultVote(username);
                 event.reply("Cleared default vote for " + username).queue();
+            }),
+    CURRENT_VOTE("current-vote", "List your current vote in this election",
+            data -> data,
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                Vote vote = session.getVote(username);
+                String message;
+                if (vote != null) {
+                    message = "Your current vote is:\n" + vote;
+                } else {
+                    message = "You haven't cast a vote in the current election. \n" +
+                            "Type /vote to vote for a list of games. \n" +
+                            "Type /rate to build a vote by rating one game at a time.";
+                }
+                event.reply(message).setEphemeral(true).queue();
+            }),
+    TOGGLE_PAST("toggle-past-weights", "Toggle or set whether vote weights from past elections are included in this election",
+            data -> data.addOption(OptionType.BOOLEAN, "on", "TRUE to turn on past vote weights in this election", false),
+            (event, session) -> {
+                OptionMapping on = event.getOption("on");
+                boolean result;
+                if (on != null) {
+                    result = on.getAsBoolean();
+                    session.setIncludeShadow(result);
+                } else {
+                    result = session.toggleIncludeShadow();
+                }
+                String username = event.getUser().getEffectiveName();
+                event.reply(username + " toggled past vote weights to " + (result ? "ON" : "OFF")).queue();
+            }),
+    PICK("pick", "Tally votes and pick the winning game(s)",
+            data -> data,
+            (event, session) -> {
+                Set<Option> winners = session.pickWinner();
+                Set<Game> winningGames = winners
+                        .stream()
+                        .map(Option::name)
+                        .map(Game::interpret) // FIXME make this agnostic to Games
+                        .map(Optional::orElseThrow)
+                        .collect(Collectors.toSet());
+
+                String winnersString = winners
+                        .stream()
+                        .map(option -> "**" + option.name() + "**")
+                        .sorted()
+                        .collect(Collectors.joining(", and "));
+
+                int numVoters = session.numVoters();
+                String warning = winningGames
+                        .stream()
+                        .filter(game -> game.getMaxPlayers() < numVoters && game.getMaxPlayers() > 0)
+                        .map(game -> "\n*Warning:* " + game.getTitle() + " has a maximum number of players of " + game.getMaxPlayers())
+                        .collect(Collectors.joining());
+
+                event.reply("The winner is: " + winnersString + warning).queue();
+                File resultsFile = Paths.get("./data/flowplot.png").toFile(); // FIXME hard coded
+                event.getChannel().sendFiles(FileUpload.fromData(resultsFile)).queue();
             }),
     PLAY("play", "Use this command only once when a game is chosen to record unspent vote weights",
             data -> data.addOption(OptionType.STRING, "game", "The winning game to play", true),
