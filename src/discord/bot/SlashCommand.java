@@ -23,6 +23,11 @@ import java.util.stream.Collectors;
 import static discord.bot.CommandDataInitializers.*;
 
 public enum SlashCommand {
+
+    //region Commands
+
+    //region Session Management
+
     NEW_POLL("new", "Begins a new election",
             data -> {
                 data.addOption(OptionType.STRING, "prompt", "Write a prompt for this poll");
@@ -54,150 +59,6 @@ public enum SlashCommand {
                 joiner.add("Type /candidates to see a list of all candidates.");
 
                 event.reply(joiner.toString()).queue();
-            }),
-    GAMES_LIST("games", "Lists out the games that we can play",
-            (event, session) -> {
-                String stringList = session.getOptions()
-                        .stream()
-                        .map(Option::name)
-                        .sorted()
-                        .collect(Collectors.joining("\n"));
-                event.reply(stringList).setEphemeral(true).queue();
-            }),
-    CANDIDATES("candidates", "Lists out the candidates in this election",
-            (event, session) -> {
-                String stringList = session.getOptions()
-                        .stream()
-                        .map(Option::name)
-                        .sorted()
-                        .collect(Collectors.joining("\n"));
-                event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
-            }),
-    STORE_CANDIDATES("store-candidates", "Stores the candidates in this election for future elections",
-            (event, session) -> {
-                session.storeCandidates();
-                event.reply("Stored this election's candidates for future use").queue();
-            }),
-    SUGGEST("suggest", "Add an option to this election",
-            (event, session) -> {
-                Modal modal = suggestionModal();
-
-                event.replyModal(modal).queue();
-            }),
-    VOTE("vote", "Submit a vote for what game(s) to play",
-            data -> {
-                data.addOption(OptionType.STRING, "first", "Favorite choice of a game to play", true);
-                data.addOption(OptionType.STRING, "second", "Second-favorite choice of a game to play");
-                data.addOption(OptionType.STRING, "third", "Third-favorite choice of a game to play");
-                data.addOption(OptionType.STRING, "fourth", "Fourth-favorite choice of a game to play");
-                data.addOption(OptionType.STRING, "fifth", "Fifth-favorite choice of a game to play");
-                return data;
-            },
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                List<Option> gamesList = event.getOptions()
-                        .stream()
-                        .map(OptionMapping::getAsString)
-                        .map(session::interpret)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .collect(Collectors.toList());
-
-                session.addVote(username, gamesList);
-
-                String namesList = "";
-                int i=1;
-                for (Option option : gamesList) {
-                    namesList += i++ + ". " + option.name() + "\n";
-                }
-                event.reply(username + " submitted a ranked vote for:\n" + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
-            }),
-    RATE("rate", "Build a weighted vote one candidate at at time; accepts integers",
-            data -> {
-                data.addOption(OptionType.STRING, "candidate", "Candidate to rate", true);
-                data.addOption(OptionType.INTEGER, "rating", "Integer rating for this candidate", true);
-                return data;
-            },
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                String gameString = event.getOption("candidate").getAsString();
-                Option option = session.interpret(gameString).orElse(null);
-                if (option == null) {
-                    event.reply("Game not recognized: " + gameString).setEphemeral(true).queue();
-                    return;
-                }
-                Integer rating = event.getOption("rating").getAsInt();
-
-                session.rate(username, option, rating);
-
-                event.reply(username + " rated option: " + option.name() + " -> " + rating)/*.setEphemeral(true)*/.queue();
-            }),
-    VETO("veto", "Cause a game to automatically lose the election",
-            data -> data.addOption(OptionType.STRING, "game", "The game to forbid", true),
-            (event, session) -> {
-                String gameString = event.getOption("game").getAsString();
-                Option option = session.interpret(gameString).orElse(null);
-                if (option == null) {
-                    event.reply("Game not recognized").setEphemeral(true).queue();
-                    return;
-                }
-
-                String username = event.getUser().getEffectiveName();
-                boolean isVetoed = session.veto(username, option);
-                String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
-                event.reply(username + vetoed + " the game: " + option.name()).queue();
-            }),
-    CURRENT_VOTE("current-vote", "List your current vote in this election",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                Vote vote = session.getVote(username);
-                String message;
-                if (vote != null) {
-                    message = "Your current vote is:\n" + vote;
-                } else {
-                    message = "You haven't cast a vote in the current election. \n" +
-                            "Type /vote to vote for a list of games. \n" +
-                            "Type /rate to build a vote by rating one game at a time.";
-                }
-                event.reply(message).setEphemeral(true).queue();
-            }),
-    WAT("wat", "List your current vote in this election",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                Vote vote = session.getVote(username);
-                String message;
-                if (vote != null) {
-                    message = "Your current vote is:\n" + vote;
-                } else {
-                    message = "You haven't cast a vote in the current election. \n" +
-                            "Type /vote to vote for a list of games. \n" +
-                            "Type /rate to build a vote by rating one game at a time.";
-                }
-                event.reply(message).setEphemeral(true).queue();
-            }),
-    CLEAR("clear", "Clear your current vote in this election",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.clearCurrentVote(username);
-                event.reply("Cleared current vote for " + username).queue();
-            }),
-    SAVE("save", "Record your current vote as your default preferred vote for future elections",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.saveDefaultVote(username);
-                event.reply("Default vote saved for " + username).queue();
-            }),
-    LOAD("load", "Load your default preferred vote",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.loadDefaultVote(username);
-                event.reply("Default vote loaded for " + username).queue();
-            }),
-    CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.clearDefaultVote(username);
-                event.reply("Cleared default vote for " + username).queue();
             }),
     PAST_VOTES("past-votes", "Set whether vote weights from past elections are included in this election",
             ADD_TOGGLES,
@@ -262,18 +123,180 @@ public enum SlashCommand {
                 event.reply("Recorded winner of the last election: " + game.name()).queue();
             }),
     RIG("rig", "Cause a game to automatically win the election",
-        data -> data.addOption(OptionType.STRING, "game", "The automatically winning game", true),
-        (event, session) -> {
-            String gameString = event.getOption("game").getAsString();
-            Option option = session.interpret(gameString).orElse(null);
-            if (option == null) {
-                event.reply("Try again, Mr. Trump").setEphemeral(true).queue();
-                return;
-            }
+            data -> data.addOption(OptionType.STRING, "game", "The automatically winning game", true),
+            (event, session) -> {
+                String gameString = event.getOption("game").getAsString();
+                Option option = session.interpret(gameString).orElse(null);
+                if (option == null) {
+                    event.reply("Try again, Mr. Trump").setEphemeral(true).queue();
+                    return;
+                }
 
-            String username = event.getUser().getEffectiveName();
-            event.reply(username + " has rigged the vote for: " + option.name()).queue();
+                String username = event.getUser().getEffectiveName();
+                event.reply(username + " has rigged the vote for: " + option.name()).queue();
             }),
+
+    //endregion
+
+    //region Candidates
+
+    GAMES_LIST("games", "Lists out the games that we can play",
+            (event, session) -> {
+                String stringList = session.getOptions()
+                        .stream()
+                        .map(Option::name)
+                        .sorted()
+                        .collect(Collectors.joining("\n"));
+                event.reply(stringList).setEphemeral(true).queue();
+            }),
+    CANDIDATES("candidates", "Lists out the candidates in this election",
+            (event, session) -> {
+                String stringList = session.getOptions()
+                        .stream()
+                        .map(Option::name)
+                        .sorted()
+                        .collect(Collectors.joining("\n"));
+                event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
+            }),
+    STORE_CANDIDATES("store-candidates", "Stores the candidates in this election for future elections",
+            (event, session) -> {
+                session.storeCandidates();
+                event.reply("Stored this election's candidates for future use").queue();
+            }),
+    SUGGEST("suggest", "Add an option to this election",
+            (event, session) -> {
+                Modal modal = suggestionModal();
+
+                event.replyModal(modal).queue();
+            }),
+
+    //endregion
+
+    //region Voting
+
+    VOTE("vote", "Submit a vote for what game(s) to play",
+            data -> {
+                data.addOption(OptionType.STRING, "first", "Favorite choice of a game to play", true);
+                data.addOption(OptionType.STRING, "second", "Second-favorite choice of a game to play");
+                data.addOption(OptionType.STRING, "third", "Third-favorite choice of a game to play");
+                data.addOption(OptionType.STRING, "fourth", "Fourth-favorite choice of a game to play");
+                data.addOption(OptionType.STRING, "fifth", "Fifth-favorite choice of a game to play");
+                return data;
+            },
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                List<Option> gamesList = event.getOptions()
+                        .stream()
+                        .map(OptionMapping::getAsString)
+                        .map(session::interpret)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .collect(Collectors.toList());
+
+                session.addVote(username, gamesList);
+
+                String namesList = "";
+                int i=1;
+                for (Option option : gamesList) {
+                    namesList += i++ + ". " + option.name() + "\n";
+                }
+                event.reply(username + " submitted a ranked vote for:\n" + String.join("\n", namesList))/*.setEphemeral(true)*/.queue();
+            }),
+    RATE("rate", "Build a weighted vote one candidate at at time; accepts integers",
+            data -> {
+                data.addOption(OptionType.STRING, "candidate", "Candidate to rate", true);
+                data.addOption(OptionType.INTEGER, "rating", "Integer rating for this candidate", true);
+                return data;
+            },
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                String gameString = event.getOption("candidate").getAsString();
+                Option option = session.interpret(gameString).orElse(null);
+                if (option == null) {
+                    event.reply("Game not recognized: " + gameString).setEphemeral(true).queue();
+                    return;
+                }
+                Integer rating = event.getOption("rating").getAsInt();
+
+                session.rate(username, option, rating);
+
+                event.reply(username + " rated option: " + option.name() + " -> " + rating)/*.setEphemeral(true)*/.queue();
+            }),
+    VETO("veto", "Cause a game to automatically lose the election",
+            data -> data.addOption(OptionType.STRING, "game", "The game to forbid", true),
+            (event, session) -> {
+                String gameString = event.getOption("game").getAsString();
+                Option option = session.interpret(gameString).orElse(null);
+                if (option == null) {
+                    event.reply("Game not recognized").setEphemeral(true).queue();
+                    return;
+                }
+
+                String username = event.getUser().getEffectiveName();
+                boolean isVetoed = session.veto(username, option);
+                String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
+                event.reply(username + vetoed + " the game: " + option.name()).queue();
+            }),
+
+    //endregion
+
+    //region Current Vote
+
+    CURRENT_VOTE("current-vote", "List your current vote in this election",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                Vote vote = session.getVote(username);
+                String message;
+                if (vote != null) {
+                    message = "Your current vote is:\n" + vote;
+                } else {
+                    message = "You haven't cast a vote in the current election. \n" +
+                            "Type /vote to vote for a list of games. \n" +
+                            "Type /rate to build a vote by rating one game at a time.";
+                }
+                event.reply(message).setEphemeral(true).queue();
+            }),
+    WAT("wat", "List your current vote in this election",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                Vote vote = session.getVote(username);
+                String message;
+                if (vote != null) {
+                    message = "Your current vote is:\n" + vote;
+                } else {
+                    message = "You haven't cast a vote in the current election. \n" +
+                            "Type /vote to vote for a list of games. \n" +
+                            "Type /rate to build a vote by rating one game at a time.";
+                }
+                event.reply(message).setEphemeral(true).queue();
+            }),
+    CLEAR("clear", "Clear your current vote in this election",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                session.clearCurrentVote(username);
+                event.reply("Cleared current vote for " + username).queue();
+            }),
+    SAVE("save", "Record your current vote as your default preferred vote for future elections",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                session.saveDefaultVote(username);
+                event.reply("Default vote saved for " + username).queue();
+            }),
+    LOAD("load", "Load your default preferred vote",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                session.loadDefaultVote(username);
+                event.reply("Default vote loaded for " + username).queue();
+            }),
+    CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                session.clearDefaultVote(username);
+                event.reply("Cleared default vote for " + username).queue();
+            }),
+
+    //endregion
+
     HELP("help", "Lists out available commands",
             (event, session) -> {
                 String message = Arrays.stream(values())
@@ -282,6 +305,8 @@ public enum SlashCommand {
                 event.reply(message).setEphemeral(true).queue();
             }),
     ;
+
+    //endregion
 
     @NotNull
     private static Modal suggestionModal() {
