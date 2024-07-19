@@ -8,13 +8,19 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+
+import static discord.bot.CommandDataInitializers.*;
 
 public enum SlashCommand {
     NEW_POLL("new", "Begins a new election",
@@ -50,7 +56,6 @@ public enum SlashCommand {
                 event.reply(joiner.toString()).queue();
             }),
     GAMES_LIST("games", "Lists out the games that we can play",
-            data -> data,
             (event, session) -> {
                 String stringList = session.getOptions()
                         .stream()
@@ -60,7 +65,6 @@ public enum SlashCommand {
                 event.reply(stringList).setEphemeral(true).queue();
             }),
     CANDIDATES("candidates", "Lists out the candidates in this election",
-            data -> data,
             (event, session) -> {
                 String stringList = session.getOptions()
                         .stream()
@@ -70,19 +74,15 @@ public enum SlashCommand {
                 event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
             }),
     STORE_CANDIDATES("store-candidates", "Stores the candidates in this election for future elections",
-            data -> data,
             (event, session) -> {
                 session.storeCandidates();
                 event.reply("Stored this election's candidates for future use").queue();
             }),
     SUGGEST("suggest", "Add an option to this election",
-            data -> data.addOption(OptionType.STRING, "game", "The game to suggest", true),
             (event, session) -> {
-                String gameString = event.getOption("game").getAsString();
+                Modal modal = suggestionModal();
 
-                String username = event.getUser().getEffectiveName();
-                session.suggest(new Option(gameString));
-                event.reply(username + " suggested: " + gameString).queue();
+                event.replyModal(modal).queue();
             }),
     VOTE("vote", "Submit a vote for what game(s) to play",
             data -> {
@@ -147,8 +147,21 @@ public enum SlashCommand {
                 String vetoed = isVetoed ? " vetoed" : " UN-vetoed";
                 event.reply(username + vetoed + " the game: " + option.name()).queue();
             }),
+    CURRENT_VOTE("current-vote", "List your current vote in this election",
+            (event, session) -> {
+                String username = event.getUser().getEffectiveName();
+                Vote vote = session.getVote(username);
+                String message;
+                if (vote != null) {
+                    message = "Your current vote is:\n" + vote;
+                } else {
+                    message = "You haven't cast a vote in the current election. \n" +
+                            "Type /vote to vote for a list of games. \n" +
+                            "Type /rate to build a vote by rating one game at a time.";
+                }
+                event.reply(message).setEphemeral(true).queue();
+            }),
     WAT("wat", "List your current vote in this election",
-            data -> data,
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
                 Vote vote = session.getVote(username);
@@ -163,64 +176,50 @@ public enum SlashCommand {
                 event.reply(message).setEphemeral(true).queue();
             }),
     CLEAR("clear", "Clear your current vote in this election",
-            data -> data,
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
                 session.clearCurrentVote(username);
                 event.reply("Cleared current vote for " + username).queue();
             }),
     SAVE("save", "Record your current vote as your default preferred vote for future elections",
-            data -> data,
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
                 session.saveDefaultVote(username);
                 event.reply("Default vote saved for " + username).queue();
             }),
     LOAD("load", "Load your default preferred vote",
-            data -> data,
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
                 session.loadDefaultVote(username);
                 event.reply("Default vote loaded for " + username).queue();
             }),
     CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
-            data -> data,
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
                 session.clearDefaultVote(username);
                 event.reply("Cleared default vote for " + username).queue();
             }),
-    CURRENT_VOTE("current-vote", "List your current vote in this election",
-            data -> data,
+    PAST_VOTES("past-votes", "Set whether vote weights from past elections are included in this election",
+            ADD_TOGGLES,
             (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                Vote vote = session.getVote(username);
-                String message;
-                if (vote != null) {
-                    message = "Your current vote is:\n" + vote;
-                } else {
-                    message = "You haven't cast a vote in the current election. \n" +
-                            "Type /vote to vote for a list of games. \n" +
-                            "Type /rate to build a vote by rating one game at a time.";
-                }
-                event.reply(message).setEphemeral(true).queue();
-            }),
-    TOGGLE_PAST("toggle-past-weights", "Toggle or set whether vote weights from past elections are included in this election",
-            data -> data.addOption(OptionType.BOOLEAN, "on", "TRUE to turn on past vote weights in this election", false),
-            (event, session) -> {
-                OptionMapping on = event.getOption("on");
                 boolean result;
-                if (on != null) {
-                    result = on.getAsBoolean();
-                    session.setIncludeShadow(result);
-                } else {
-                    result = session.toggleIncludeShadow();
+                String name = event.getSubcommandName();
+                if (name == null) name = "";
+
+                switch (name) {
+                    case TOGGLE_NAME -> { result = session.toggleIncludeShadow(); }
+                    case TOGGLE_ON_NAME -> { result = session.setIncludeShadow(true); }
+                    case TOGGLE_OFF_NAME -> { result = session.setIncludeShadow(false); }
+                    default -> {
+                        event.reply("Unknown subcommand executed").queue();
+                        return;
+                    }
                 }
+
                 String username = event.getUser().getEffectiveName();
-                event.reply(username + " toggled past vote weights to " + (result ? "ON" : "OFF")).queue();
+                event.reply(username + " toggled " + (result ? "ON" : "OFF") + " past vote weights.").queue();
             }),
     PICK("pick", "Tally votes and pick the winning game(s)",
-            data -> data,
             (event, session) -> {
                 Set<Option> winners = session.pickWinner();
                 Set<Game> winningGames = winners
@@ -276,7 +275,6 @@ public enum SlashCommand {
             event.reply(username + " has rigged the vote for: " + option.name()).queue();
             }),
     HELP("help", "Lists out available commands",
-            data -> data,
             (event, session) -> {
                 String message = Arrays.stream(values())
                         .map(command -> "/"+command.slashText+" - "+command.description)
@@ -284,6 +282,19 @@ public enum SlashCommand {
                 event.reply(message).setEphemeral(true).queue();
             }),
     ;
+
+    @NotNull
+    private static Modal suggestionModal() {
+        TextInput input = TextInput.create("suggestion", "Suggestion", TextInputStyle.SHORT)
+                .setPlaceholder("Enter suggestion name here")
+                .setMinLength(1)
+                .setMaxLength(30)
+                .build();
+
+        return Modal.create("suggest", "Suggest")
+                .addActionRow(input)
+                .build();
+    }
 
     public final String slashText;
     public final String description;
@@ -298,6 +309,12 @@ public enum SlashCommand {
         this.description = description;
         this.optionsOperator = optionsOperator;
         this.eventHandler = eventHandler;
+    }
+
+    SlashCommand(String slashText,
+                 String description,
+                 EventHandler eventHandler) {
+        this(slashText, description, NO_OP, eventHandler);
     }
 
     public SlashCommandData addOptions(SlashCommandData data) {

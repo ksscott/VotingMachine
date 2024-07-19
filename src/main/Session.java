@@ -120,7 +120,7 @@ public class Session { // TODO threading considerations
         ChartUtils.saveChartAsPNG(CHART_FILE_PATH.toFile(), chart, data.getStageCount()*150, 1300);
     }
 
-    public void setIncludeShadow(boolean includeShadow) { election.setIncludeShadow(includeShadow); }
+    public boolean setIncludeShadow(boolean includeShadow) { return election.setIncludeShadow(includeShadow); }
 
     public boolean toggleIncludeShadow() { return election.toggleIncludeShadow(); }
 

@@ -61,7 +61,10 @@ public class Election<V extends Vote> {
 		return votes.get(race).remove(vote);
 	}
 
-	public void setIncludeShadow(boolean includeShadow) { this.includeShadow = includeShadow; }
+	public boolean setIncludeShadow(boolean includeShadow) {
+		this.includeShadow = includeShadow;
+		return this.includeShadow;
+	}
 
 	public boolean toggleIncludeShadow() {
 		includeShadow = !this.includeShadow;

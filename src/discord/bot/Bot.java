@@ -1,9 +1,11 @@
 package discord.bot;
 
 import main.Session;
+import model.Option;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -48,5 +50,24 @@ public class Bot extends ListenerAdapter {
         }
 
         SlashCommand.handle(event, session);
+    }
+
+    @Override
+    public void onModalInteraction(ModalInteractionEvent event) {
+        event.deferEdit().queue();
+
+        if ("suggest".equals(event.getModalId())) {
+            handleSuggestion(event);
+        }
+    }
+
+    private void handleSuggestion(ModalInteractionEvent event) {
+        String username = event.getUser().getEffectiveName();
+        String gameString = event.getValues().get(0).getAsString();
+        String message = ":right_arrow: " + username + " suggested: " + gameString;
+
+        session.suggest(new Option(gameString));
+
+        event.getChannel().sendMessage(message).queue();
     }
 }
