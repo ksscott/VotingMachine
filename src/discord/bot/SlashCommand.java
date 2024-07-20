@@ -68,9 +68,9 @@ public enum SlashCommand {
                 if (name == null) name = "";
 
                 switch (name) {
-                    case TOGGLE_NAME -> { result = session.toggleIncludeShadow(); }
-                    case TOGGLE_ON_NAME -> { result = session.setIncludeShadow(true); }
-                    case TOGGLE_OFF_NAME -> { result = session.setIncludeShadow(false); }
+                    case TOGGLE_NAME -> result = session.toggleIncludeShadow();
+                    case TOGGLE_ON_NAME -> result = session.setIncludeShadow(true);
+                    case TOGGLE_OFF_NAME -> result = session.setIncludeShadow(false);
                     default -> {
                         event.reply("Unknown subcommand executed").queue();
                         return;
@@ -242,57 +242,75 @@ public enum SlashCommand {
 
     //region Current Vote
 
-    CURRENT_VOTE("current-vote", "List your current vote in this election",
+    CURRENT_VOTE("current-vote", "View or erase your current vote in this election",
+            data -> data.addSubcommands(VIEW_CURR, CLEAR_CURR, WAT),
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
-                Vote vote = session.getVote(username);
+
                 String message;
-                if (vote != null) {
-                    message = "Your current vote is:\n" + vote;
-                } else {
-                    message = "You haven't cast a vote in the current election. \n" +
-                            "Type /vote to vote for a list of games. \n" +
-                            "Type /rate to build a vote by rating one game at a time.";
+
+                String name = event.getSubcommandName();
+                if (name == null) name = "";
+
+                switch (name) {
+                    case VIEW_NAME, WAT_NAME -> {
+                        Vote vote = session.getVote(username);
+                        if (vote != null) {
+                            message = "Your current vote is:\n" + vote;
+                        } else {
+                            message = "You haven't cast a vote in the current election. \n" +
+                                    "Type /vote to vote for a list of games. \n" +
+                                    "Type /rate to build a vote by rating one game at a time.";
+                        }
+                    }
+                    case CLEAR_NAME -> {
+                        session.clearCurrentVote(username);
+                        message = "Cleared current vote for " + username;
+                    }
+                    default -> {
+                        event.reply("Unknown subcommand executed").queue();
+                        return;
+                    }
                 }
+
+
                 event.reply(message).setEphemeral(true).queue();
             }),
-    WAT("wat", "List your current vote in this election",
+
+    //endregion
+
+    //region Default Vote
+
+    DEFAULT_VOTE("default-vote", "Record your current vote as your default preferred vote for future elections",
+            data -> data.addSubcommands(SAVE_DEFAULT, LOAD_DEFAULT, CLEAR_DEFAULT),
             (event, session) -> {
                 String username = event.getUser().getEffectiveName();
-                Vote vote = session.getVote(username);
+
                 String message;
-                if (vote != null) {
-                    message = "Your current vote is:\n" + vote;
-                } else {
-                    message = "You haven't cast a vote in the current election. \n" +
-                            "Type /vote to vote for a list of games. \n" +
-                            "Type /rate to build a vote by rating one game at a time.";
+
+                String name = event.getSubcommandName();
+                if (name == null) name = "";
+
+                switch (name) {
+                    case SAVE_NAME -> {
+                        session.saveDefaultVote(username);
+                        message = "Default vote saved for " + username;
+                    }
+                    case LOAD_NAME -> {
+                        session.loadDefaultVote(username);
+                        message = "Default vote loaded for " + username;
+                    }
+                    case CLEAR_NAME -> {
+                        session.clearDefaultVote(username);
+                        message = "Cleared default vote for " + username;
+                    }
+                    default -> {
+                        event.reply("Unknown subcommand executed").queue();
+                        return;
+                    }
                 }
-                event.reply(message).setEphemeral(true).queue();
-            }),
-    CLEAR("clear", "Clear your current vote in this election",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.clearCurrentVote(username);
-                event.reply("Cleared current vote for " + username).queue();
-            }),
-    SAVE("save", "Record your current vote as your default preferred vote for future elections",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.saveDefaultVote(username);
-                event.reply("Default vote saved for " + username).queue();
-            }),
-    LOAD("load", "Load your default preferred vote",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.loadDefaultVote(username);
-                event.reply("Default vote loaded for " + username).queue();
-            }),
-    CLEAR_DEFAULT("clear-default", "Clear your recorded default vote",
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                session.clearDefaultVote(username);
-                event.reply("Cleared default vote for " + username).queue();
+
+                event.reply(message).queue();
             }),
 
     //endregion
