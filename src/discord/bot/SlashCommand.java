@@ -8,9 +8,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
-import net.dv8tion.jda.api.interactions.components.text.TextInput;
-import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
-import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.utils.FileUpload;
 import org.jetbrains.annotations.NotNull;
 
@@ -58,7 +55,13 @@ public enum SlashCommand {
                 joiner.add("Type /rate to build a vote by rating one option at a time.");
                 joiner.add("Type /candidates to see a list of all candidates.");
 
-                event.reply(joiner.toString()).queue();
+                event.reply(joiner.toString())
+                        .addActionRow(
+                                ButtonWrapper.PAST_VOTES.button(),
+                                ButtonWrapper.PICK.button(),
+                                ButtonWrapper.PLAY.button()
+                        )
+                        .queue();
             }),
     PAST_VOTES("past-votes", "Set whether vote weights from past elections are included in this election",
             ADD_TOGGLES,
@@ -87,7 +90,8 @@ public enum SlashCommand {
                         .stream()
                         .map(Option::name)
                         .map(Game::interpret) // FIXME make this agnostic to Games
-                        .map(Optional::orElseThrow)
+                        .map(o -> o.orElse(null))
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
                 String winnersString = winners
@@ -108,19 +112,8 @@ public enum SlashCommand {
                 event.getChannel().sendFiles(FileUpload.fromData(resultsFile)).queue();
             }),
     PLAY("play", "Use this command only once when a game is chosen to record unspent vote weights",
-            data -> data.addOption(OptionType.STRING, "game", "The winning game to play", true),
             (event, session) -> {
-                String gameString = event.getOption("game").getAsString();
-                Option game = session.interpret(gameString).orElse(null);
-                if (game == null) {
-                    event.reply("Game not recognized").setEphemeral(true).queue();
-                    return;
-                }
-                session.recordUnspentVotes(game);
-
-                // FIXME There's a bug in here somewhere: "Error: null"
-
-                event.reply("Recorded winner of the last election: " + game.name()).queue();
+                event.replyModal(ModalWrapper.PLAY.modal()).queue();
             }),
     RIG("rig", "Cause a game to automatically win the election",
             data -> data.addOption(OptionType.STRING, "game", "The automatically winning game", true),
@@ -150,6 +143,7 @@ public enum SlashCommand {
                 event.reply(stringList).setEphemeral(true).queue();
             }),
     CANDIDATES("candidates", "Lists out the candidates in this election",
+            data -> data.addSubcommands(VIEW_CANDIDATES, SAVE_CANDIDATES, SUGGEST_CANDIDATES),
             (event, session) -> {
                 String name = event.getSubcommandName();
                 if (name == null) name = "";
@@ -168,7 +162,7 @@ public enum SlashCommand {
                         event.reply("Stored this election's candidates for future use").queue();
                     }
                     case SUGGEST_NAME -> {
-                        event.replyModal(suggestionModal()).queue();
+                        event.replyModal(ModalWrapper.SUGGEST.modal()).queue();
                     }
                     default -> {
                         event.reply("Unknown subcommand executed").queue();
@@ -333,28 +327,15 @@ public enum SlashCommand {
 
     //endregion
 
-    @NotNull
-    private static Modal suggestionModal() {
-        TextInput input = TextInput.create("suggestion", "Suggestion", TextInputStyle.SHORT)
-                .setPlaceholder("Enter suggestion name here")
-                .setMinLength(1)
-                .setMaxLength(30)
-                .build();
-
-        return Modal.create("suggest", "Suggest")
-                .addActionRow(input)
-                .build();
-    }
-
     public final String slashText;
     public final String description;
     private final UnaryOperator<SlashCommandData> optionsOperator;
-    private final EventHandler eventHandler;
+    private final EventHandler<SlashCommandInteractionEvent> eventHandler;
 
     SlashCommand(String slashText,
                  String description,
                  UnaryOperator<SlashCommandData> optionsOperator,
-                 EventHandler eventHandler) {
+                 EventHandler<SlashCommandInteractionEvent> eventHandler) {
         this.slashText = slashText;
         this.description = description;
         this.optionsOperator = optionsOperator;
@@ -363,7 +344,7 @@ public enum SlashCommand {
 
     SlashCommand(String slashText,
                  String description,
-                 EventHandler eventHandler) {
+                 EventHandler<SlashCommandInteractionEvent> eventHandler) {
         this(slashText, description, NO_OP, eventHandler);
     }
 
@@ -371,7 +352,7 @@ public enum SlashCommand {
         return optionsOperator.apply(data);
     }
 
-    public static void handle(SlashCommandInteractionEvent event, Session session) {
+    public static void handle(@NotNull SlashCommandInteractionEvent event, @NotNull Session session) {
         for (SlashCommand command : values()) {
             if (command.slashText.equalsIgnoreCase(event.getName())) {
                 try {
@@ -382,16 +363,5 @@ public enum SlashCommand {
                 break;
             }
         }
-    }
-
-    /**
-     * An implementation of {@link java.util.function.BiConsumer} that doesn't handle its own exceptions.
-     * Useful for declaring throwing lambda expressions.
-     * <p>
-     * Example EventHandler lambda expression:
-     * <code>(event, session) -> { event.reply("Command received").queue(); }</code>
-     */
-    public interface EventHandler {
-        void accept(SlashCommandInteractionEvent event, Session session) throws Exception;
     }
 }
