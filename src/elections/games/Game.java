@@ -1,5 +1,7 @@
 package elections.games;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +53,7 @@ public enum Game {
 	UNRAILED("Unrailed!", 4),
 	VAINGLORY("Vainglory", 10),
 	VALHEIM("Valheim", 10),
+	WORLD_OF_WARSHIPS("World of Warships", -1),
 	WORMS_WMD("Worms W.M.D.", 6),
 	;
 
@@ -66,6 +69,7 @@ public enum Game {
 
 	public int getMaxPlayers() { return maxPlayers; }
 
+	@NotNull
 	public static Optional<Game> interpret(String input) {
 		return Arrays.stream(values()).filter(game -> game.title.toLowerCase().contains(input.toLowerCase())).findAny();
 	}
