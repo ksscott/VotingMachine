@@ -151,23 +151,30 @@ public enum SlashCommand {
             }),
     CANDIDATES("candidates", "Lists out the candidates in this election",
             (event, session) -> {
-                String stringList = session.getOptions()
-                        .stream()
-                        .map(Option::name)
-                        .sorted()
-                        .collect(Collectors.joining("\n"));
-                event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
-            }),
-    STORE_CANDIDATES("store-candidates", "Stores the candidates in this election for future elections",
-            (event, session) -> {
-                session.storeCandidates();
-                event.reply("Stored this election's candidates for future use").queue();
-            }),
-    SUGGEST("suggest", "Add an option to this election",
-            (event, session) -> {
-                Modal modal = suggestionModal();
+                String name = event.getSubcommandName();
+                if (name == null) name = "";
 
-                event.replyModal(modal).queue();
+                switch (name) {
+                    case VIEW_NAME -> {
+                        String stringList = session.getOptions()
+                                .stream()
+                                .map(Option::name)
+                                .sorted()
+                                .collect(Collectors.joining("\n"));
+                        event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
+                    }
+                    case SAVE_NAME -> {
+                        session.storeCandidates();
+                        event.reply("Stored this election's candidates for future use").queue();
+                    }
+                    case SUGGEST_NAME -> {
+                        event.replyModal(suggestionModal()).queue();
+                    }
+                    default -> {
+                        event.reply("Unknown subcommand executed").queue();
+                        return;
+                    }
+                }
             }),
 
     //endregion

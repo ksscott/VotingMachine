@@ -9,9 +9,19 @@ public class CommandDataInitializers {
 
     public static final UnaryOperator<SlashCommandData> NO_OP = data -> data;
 
-    //region Current Vote
+    //region Candidates
 
     public static final String VIEW_NAME = "view";
+    static final SubcommandData VIEW_CANDIDATES = new SubcommandData(VIEW_NAME, "List out the candidates in this election");
+    public static final String SAVE_NAME = "save";
+    static final SubcommandData SAVE_CANDIDATES = new SubcommandData(SAVE_NAME, "Store the candidates in this election for future elections");
+    public static final String SUGGEST_NAME = "suggest";
+    static final SubcommandData SUGGEST_CANDIDATES = new SubcommandData(SUGGEST_NAME, "Add an option to this election");
+
+    //endregion
+
+    //region Current Vote
+
     static final SubcommandData VIEW_CURR = new SubcommandData(VIEW_NAME, "View your current vote in this election");
     public static final String WAT_NAME = "wat";
     static final SubcommandData WAT = new SubcommandData(WAT_NAME, "wat is current vote??");
@@ -22,7 +32,6 @@ public class CommandDataInitializers {
 
     //region Default Vote
 
-    public static final String SAVE_NAME = "save";
     static final SubcommandData SAVE_DEFAULT = new SubcommandData(SAVE_NAME, "Save current vote as default vote");
     public static final String LOAD_NAME = "load";
     static final SubcommandData LOAD_DEFAULT = new SubcommandData(LOAD_NAME, "Load default vote, replacing your current vote");
