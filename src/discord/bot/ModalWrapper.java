@@ -1,15 +1,18 @@
 package discord.bot;
 
+import discord.bot.events.EventHandler;
+import discord.bot.events.ModalEvent;
 import main.Session;
-import model.Option;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.util.function.Supplier;
+
+import static discord.bot.events.EventHandler.PLAY_MODAL_HANDLER;
+import static discord.bot.events.EventHandler.SUGGEST_MODAL_HANDLER;
 
 public enum ModalWrapper {
     SUGGEST("suggest",
@@ -24,14 +27,7 @@ public enum ModalWrapper {
                         .addActionRow(input)
                         .build();
             },
-            (event, session) -> {
-                String username = event.getUser().getEffectiveName();
-                String gameString = event.getValues().get(0).getAsString();
-
-                session.suggest(new Option(gameString));
-
-                event.reply(":right_arrow: " + username + " suggested: " + gameString).queue();
-            }),
+            SUGGEST_MODAL_HANDLER),
     PLAY("play",
             () -> {
                 TextInput input = TextInput.create("play", "Played Game", TextInputStyle.SHORT)
@@ -44,31 +40,16 @@ public enum ModalWrapper {
                         .addActionRow(input)
                         .build();
             },
-            (event, session) -> {
-                String gameString = event.getValues().get(0).getAsString();
-                Option game = session.interpret(gameString).orElse(null);
-                if (game == null) {
-                    event.reply("Game not recognized").setEphemeral(true).queue();
-                    return;
-                }
-                try {
-                    session.recordUnspentVotes(game);
-                } catch (IOException e) {
-                    event.reply("Command encountered an error: \n" + e.getMessage()).setEphemeral(true).queue();
-                    return;
-                }
-
-                // FIXME There's a bug in here somewhere: "Error: null"
-
-                event.reply("Recorded winner of the last election: " + game.name()).queue();
-            }),
+            PLAY_MODAL_HANDLER),
     ;
 
     public final String id;
     private final Supplier<Modal> modalMaker;
-    private final EventHandler<ModalInteractionEvent> eventHandler;
+    private final EventHandler eventHandler;
 
-    ModalWrapper(String id, Supplier<Modal> modalMaker, EventHandler<ModalInteractionEvent> eventHandler) {
+    ModalWrapper(@NotNull String id,
+                 @NotNull Supplier<Modal> modalMaker,
+                 @NotNull EventHandler eventHandler) {
         this.id = id;
         this.modalMaker = modalMaker;
         this.eventHandler = eventHandler;
@@ -82,7 +63,7 @@ public enum ModalWrapper {
         for (ModalWrapper modal : values()) {
             if (modal.id.equalsIgnoreCase(event.getModalId())) {
                 try {
-                    modal.eventHandler.accept(event, session);
+                    modal.eventHandler.accept(new ModalEvent(event), session);
                 } catch (Exception e) {
                     event.reply("Modal encountered an error: \n" + e.getMessage()).setEphemeral(true).queue();
                 }
