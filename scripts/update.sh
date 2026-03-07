@@ -12,9 +12,12 @@ if git pull origin master; then
 
     if [ "$BEFORE" != "$AFTER" ]; then
         echo "Changes detected, rebuilding..."
-        mvn package -q
-        cp "$REPO_DIR/target/pollster.jar" "$RUN_DIR/pollster.jar"
-        echo "Rebuild complete."
+        if mvn package -q; then
+            cp "$REPO_DIR/target/pollster.jar" "$RUN_DIR/pollster.jar"
+            echo "Rebuild complete."
+        else
+            echo "Warning: build failed, starting with existing build."
+        fi
     else
         echo "No changes detected, skipping rebuild."
     fi
