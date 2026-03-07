@@ -92,6 +92,8 @@ public enum SlashCommand {
 
     HELP("help", "Lists out available commands",
             HELP_HANDLER),
+    VERSION("version", "Displays the current version of this bot",
+            VERSION_HANDLER),
     ;
 
     //endregion

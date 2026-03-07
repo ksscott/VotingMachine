@@ -5,6 +5,7 @@ import discord.bot.ModalWrapper;
 import discord.bot.SlashCommand;
 import elections.games.Game;
 import main.Session;
+import main.Version;
 import model.Option;
 import model.vote.Vote;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -285,6 +286,9 @@ public interface EventHandler {
                 .collect(Collectors.joining("\n"));
         event.reply(message).setEphemeral(true).queue();
     };
+
+    EventHandler VERSION_HANDLER = (event, session) ->
+            event.reply("Version: " + Version.VERSION).setEphemeral(true).queue();
 
     //endregion
 
