@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
 Main-Class: discord.bot.Bot
+Implementation-Version: 1.1.0
 

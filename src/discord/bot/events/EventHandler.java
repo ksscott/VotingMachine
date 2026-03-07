@@ -1,6 +1,5 @@
 package discord.bot.events;
 
-import discord.bot.Bot;
 import discord.bot.ButtonWrapper;
 import discord.bot.ModalWrapper;
 import discord.bot.SlashCommand;
@@ -287,8 +286,10 @@ public interface EventHandler {
         event.reply(message).setEphemeral(true).queue();
     };
 
-    EventHandler VERSION_HANDLER = (event, session) ->
-            event.reply("Version: " + Bot.VERSION).setEphemeral(true).queue();
+    EventHandler VERSION_HANDLER = (event, session) -> {
+        String version = Bot.class.getPackage().getImplementationVersion();
+        event.reply("Version: " + (version != null ? version : "unknown")).setEphemeral(true).queue();
+    };
 
     //endregion
 
