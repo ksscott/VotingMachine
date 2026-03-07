@@ -12,15 +12,44 @@ A voting machine capable of deciding an election by instant runoff.
 
 ## Getting Started
 
-### Discord Bot
+### Prerequisites
 
-This application is primarily intended to be run as a Discord bot. 
-Follow Discord's [instructions](https://discord.com/developers/docs/getting-started) for adding a bot to your server. 
-When it's configured, execute this application from the main method in [Bot.java](src/discord/bot/Bot.java), 
-    passing in your bot's [token](https://discord.com/developers/docs/getting-started#configuring-your-bot) 
-    as the single runtime argument.
-The application will connect to your server and register various 
-    [slash commands](https://discord.com/blog/slash-commands-are-here) needed to interact with the bot. 
+* Java 17+
+* Maven 3.x (`sudo apt install maven` on Debian/Ubuntu)
+
+### Discord Bot Setup
+
+This application is primarily intended to be run as a Discord bot.
+Follow Discord's [instructions](https://discord.com/developers/docs/getting-started) for adding a bot to your server
+and obtain your bot's [token](https://discord.com/developers/docs/getting-started#configuring-your-bot).
+
+Store your token in a file **outside the repository** so it is never committed to source control:
+
+```bash
+echo "YOUR_BOT_TOKEN" > /path/to/token.txt
+chmod 600 /path/to/token.txt
+```
+
+### Building
+
+Clone the repository and build a fat JAR using Maven:
+
+```bash
+git clone https://github.com/ksscott/VotingMachine.git
+cd VotingMachine
+mvn package
+```
+
+The compiled JAR will be at `target/pollster.jar`.
+
+### Running
+
+```bash
+java -jar target/pollster.jar $(cat /path/to/token.txt)
+```
+
+The application will connect to your server and register various
+[slash commands](https://discord.com/blog/slash-commands-are-here) needed to interact with the bot.
 Type `/help` in a channel called `#bot-commands` to get started.
 
 ## Elections
@@ -49,3 +78,4 @@ Currently, the Discord bot only supports elections with a single race.
 ## Dependencies
 * [JDA](https://github.com/discord-jda/JDA)
 * [JFreeChart](https://www.jfree.org/jfreechart/)
+* [Jackson](https://github.com/FasterXML/jackson)

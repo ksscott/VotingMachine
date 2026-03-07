@@ -1,0 +1,17 @@
+# Build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Credentials / config
+.env
+*.token
+token.txt
+config.properties
+secrets.*
+
+# Data files (runtime state, not source)
+data/
