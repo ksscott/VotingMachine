@@ -287,8 +287,15 @@ public interface EventHandler {
     };
 
     EventHandler VERSION_HANDLER = (event, session) -> {
-        String version = Bot.class.getPackage().getImplementationVersion();
-        event.reply("Version: " + (version != null ? version : "unknown")).setEphemeral(true).queue();
+        String version = "unknown";
+        try (java.io.InputStream is = EventHandler.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
+            if (is != null) {
+                java.util.jar.Manifest manifest = new java.util.jar.Manifest(is);
+                String v = manifest.getMainAttributes().getValue("Implementation-Version");
+                if (v != null) version = v;
+            }
+        } catch (Exception ignored) {}
+        event.reply("Version: " + version).setEphemeral(true).queue();
     };
 
     //endregion
