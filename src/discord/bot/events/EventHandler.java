@@ -286,6 +286,11 @@ public interface EventHandler {
         event.reply(message).setEphemeral(true).queue();
     };
 
+    EventHandler VERSION_HANDLER = (event, session) -> {
+        String version = Bot.class.getPackage().getImplementationVersion();
+        event.reply("Version: " + (version != null ? version : "unknown")).setEphemeral(true).queue();
+    };
+
     //endregion
 
     //region Buttons

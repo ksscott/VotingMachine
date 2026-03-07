@@ -1,0 +1,17 @@
+[Unit]
+Description=Pollster Discord Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bot
+ExecStartPre=/bin/bash /home/bot/Build/VotingMachine/scripts/update.sh
+ExecStart=/bin/bash /home/bot/Build/VotingMachine/scripts/start.sh
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
