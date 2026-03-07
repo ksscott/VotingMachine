@@ -67,7 +67,10 @@
                             <finalName>pollster</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+                                    <mainClass>discord.bot.Bot</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                    </manifestEntries>
                                 </transformer>
                             </transformers>
                         </configuration>
