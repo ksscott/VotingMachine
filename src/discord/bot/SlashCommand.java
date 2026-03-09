@@ -90,8 +90,16 @@ public enum SlashCommand {
 
     //endregion
 
+    //region Residual Vote
+
+    RESIDUAL_VOTE("residual-vote", "View your remaining vote weight from previous elections",
+            RESIDUAL_VOTE_HANDLER),
+
+    //endregion
+
     HELP("help", "Lists out available commands",
             HELP_HANDLER),
+
     VERSION("version", "Displays the current version of this bot",
             VERSION_HANDLER),
     ;

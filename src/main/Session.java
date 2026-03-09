@@ -137,11 +137,7 @@ public class Session { // TODO threading considerations
     public Vote getVote(@NotNull String voterName) {
         requireElection();
 
-        return election.getVotes(race, false)
-                .stream()
-                .filter(v -> v.voterName.equals(voterName))
-                .findAny()
-                .orElse(null);
+        return getUsersVote(voterName, election.getVotes(race, false));
     }
 
     /** Cast a vote */
@@ -222,8 +218,6 @@ public class Session { // TODO threading considerations
      * @throws IOException for errors during write of default vote file
      */
     public void saveDefaultVote(@NotNull String voterName) throws IOException {
-        requireElection();
-
         Vote vote = getVote(voterName);
 
         replaceDefaultVote(voterName, vote);
@@ -235,12 +229,10 @@ public class Session { // TODO threading considerations
 
         List<Vote> recordedVotes = DataUtils.deserializeFile(VOTES_FILE_PATH, DataUtils::deserializeVote);
 
-        Vote vote = recordedVotes
-                .stream()
-                .filter(Objects::nonNull)
-                .filter(v -> v.voterName.equals(voterName))
-                .findAny()
-                .orElseThrow(() -> new RuntimeException("Vote not found for " + voterName));
+        Vote vote = getUsersVote(voterName, recordedVotes);
+        if (vote == null) {
+            throw new RuntimeException("Vote not found for " + voterName);
+        }
 
         addVote(vote);
     }
@@ -279,12 +271,6 @@ public class Session { // TODO threading considerations
                 .map(v -> WeightedVote.unspentWeight(v, winner))
                 .collect(Collectors.toSet());
         updateUnspentVotes(unspentVotes, winner);
-    }
-
-    @NotNull
-    @Contract(" -> new")
-    private Set<WeightedVote> loadUnspentVotes() throws IOException {
-        return new HashSet<>(DataUtils.deserializeFile(UNSPENT_FILE_PATH, DataUtils::deserializeWeightedVote));
     }
 
     /**
@@ -343,6 +329,17 @@ public class Session { // TODO threading considerations
         DataUtils.writeFile(UNSPENT_FILE_PATH, DataUtils.serializeItems(recordedVotes));
     }
 
+    @NotNull
+    @Contract(" -> new")
+    private Set<WeightedVote> loadUnspentVotes() throws IOException {
+        return new HashSet<>(DataUtils.deserializeFile(UNSPENT_FILE_PATH, DataUtils::deserializeWeightedVote));
+    }
+
+    @Nullable
+    public Vote getUnspentVote(@NotNull String voterName) throws IOException {
+        return getUsersVote(voterName, loadUnspentVotes());
+    }
+
     //endregion
 
     //region Stored Candidates
@@ -359,4 +356,9 @@ public class Session { // TODO threading considerations
     }
 
     //endregion
+
+    @Nullable
+    private static Vote getUsersVote(@NotNull String voterName, @NotNull Collection<? extends Vote> votes) {
+        return votes.stream().filter(v -> v.voterName.equals(voterName)).findAny().orElse(null);
+    }
 }

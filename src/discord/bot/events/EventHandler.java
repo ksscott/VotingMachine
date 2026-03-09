@@ -279,6 +279,24 @@ public interface EventHandler {
         event.reply(message).queue();
     };
 
+    EventHandler RESIDUAL_VOTE_HANDLER = (event, session) -> {
+        String username = event.getUser().getEffectiveName();
+
+        String message;
+
+        Vote vote = session.getUnspentVote(username);
+        if (vote != null) {
+            message = "When your favorite candidates lose, \n" +
+                    "part of your vote is recorded for future elections. \n" +
+                    "Your current *residual* vote is:\n" + vote;
+        } else {
+            message = "You don't have any residual vote weight. \n" +
+                    "Perhaps you've never lost an election!";
+        }
+
+        event.reply(message).setEphemeral(true).queue();
+    };
+
     EventHandler HELP_HANDLER = (event, session) -> {
         String message = Arrays.stream(SlashCommand.values())
                 .map(command -> "/"+command.slashText+" - "+command.description)
