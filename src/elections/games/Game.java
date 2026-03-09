@@ -13,13 +13,16 @@ public enum Game {
 	BOOMERANG_FU("Boomerang Fu", 6),
 	CHESS("Chess (classic)", 4), // 2, 4, infinite max players?
 	CIVILIZATION_6("Sid Meier's Civilization VI", 0),
+	CIVILIZATION_7("Sid Meier's Civilization VII", 0),
 	COSMOTEER("Cosmoteer", 8),
 	DONT_STARVE_TOGETHER("Don't Starve Together", 6),
 	ECO("Eco", 0),
+	ENDLESS_DUNGEON("Endless Dungeon", 3),
 	FACTORIO("Factorio", 0),
 	FIVE_D_CHESS("5D Chess", -1),
 	FOXHOLE("Foxhole", 0),
 	HALO("Halo", -1),
+	HELLDIVERS_2("HELLDIVERS 2", 4),
 	HEROES_OF_THE_STORM("Heroes of the Storm", 10),
 	HOMEWORLD("Homeworld", 8),
 	HUMANKIND("HUMANKIND", 8),
@@ -35,6 +38,7 @@ public enum Game {
 	NEVER_SPLIT_THE_PARTY("Never Split the Party", 4),
 	NO_MANS_SKY("No Man's Sky", 32),
 	OVERCOOKED_2("Overcooked! 2", 4),
+	PHASMOPHOBIA("Phasmophobia", 4),
 	PLANETARY_ANNIHILATION_TITANS("Planetary Annihilation: TITANS", 10),
 	POKER("Poker", -1),
 	PORTAL_2("Portal 2", 2),
@@ -43,6 +47,7 @@ public enum Game {
 	RISK_OF_RAIN_2("Risk of Rain 2", 4),
 	SATISFACTORY("Satisfactory", 4),
 	SEVEN_DAYS_TO_DIE("7 Days to Die", 8),
+	SLAY_THE_SPIRE_2("Slay the Spire 2", 4),
 	SPACE_ENGINEERS("Space Engineers", 16),
 	STARCRAFT("StarCraft", 8),
 	STELLARIS("Stellaris", 0),
@@ -53,6 +58,7 @@ public enum Game {
 	UNRAILED("Unrailed!", 4),
 	VAINGLORY("Vainglory", 10),
 	VALHEIM("Valheim", 10),
+	VALORANT("Valorant", 5),
 	WORLD_OF_WARSHIPS("World of Warships", -1),
 	WORMS_WMD("Worms W.M.D.", 6),
 	;
@@ -83,29 +89,29 @@ public enum Game {
 		shortList.add(ASTRONEER);
 		shortList.add(BOOMERANG_FU);
 		shortList.add(CHESS);
-		shortList.add(CIVILIZATION_6);
+		shortList.add(CIVILIZATION_7);
 		shortList.add(ECO);
 		shortList.add(FACTORIO);
 		shortList.add(FOXHOLE);
 		shortList.add(HALO);
+		shortList.add(HELLDIVERS_2);
 		shortList.add(HEROES_OF_THE_STORM);
 		shortList.add(LETHAL_COMPANY);
 		shortList.add(LOVERS_IN_A_DANGEROUS_SPACETIME);
 		shortList.add(MINECRAFT);
 		shortList.add(NEBULOUS_FLEET_COMMAND);
 		shortList.add(NEVER_SPLIT_THE_PARTY);
-		shortList.add(OVERCOOKED_2);
 		shortList.add(POKER);
 		shortList.add(RISK_OF_RAIN_2);
 		shortList.add(SEVEN_DAYS_TO_DIE);
+		shortList.add(SLAY_THE_SPIRE_2);
 		shortList.add(STARCRAFT);
 		shortList.add(STELLARIS);
 		shortList.add(TWELVE_ORBITS);
-		shortList.add(ULTIMATE_CHICKEN_HORSE);
 		shortList.add(UNRAILED);
 		shortList.add(VAINGLORY);
 		shortList.add(VALHEIM);
-		shortList.add(WORMS_WMD);
+		shortList.add(VALORANT);
 		return shortList;
 	}
 }
