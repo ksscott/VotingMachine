@@ -195,7 +195,6 @@ public class WeightedRunoff extends EvalAlgorithm<Vote> {
 
     private void recordFlows() {
         List<ScoredOption> lastTos = resultsData.getDestinations(round - 2);
-        if (lastTos.size() >= 10) return; // Limit sankey chart to final 10 candidates
         for (Option from : latestFlows.keySet()) {
             Map<Option, Double> map = latestFlows.get(from);
             ScoredOption lastTo = lastTos.stream().filter(to -> from.name().equals(to.option.name())).findAny().orElse(null);
