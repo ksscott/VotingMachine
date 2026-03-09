@@ -79,6 +79,23 @@ public interface EventHandler {
             case TOGGLE_NAME -> result = session.toggleIncludeShadow();
             case TOGGLE_ON_NAME -> result = session.setIncludeShadow(true);
             case TOGGLE_OFF_NAME -> result = session.setIncludeShadow(false);
+            case VIEW_NAME -> {
+                String username = event.getUser().getEffectiveName();
+                String message;
+
+                Vote vote = session.getUnspentVote(username);
+                if (vote != null) {
+                    message = "When your favorite candidates lose, \n" +
+                            "part of your vote is recorded for future elections. \n" +
+                            "Your past vote is:\n" + vote;
+                } else {
+                    message = "You don't have any past vote weight. \n" +
+                            "Perhaps you've never lost an election!";
+                }
+
+                event.reply(message).setEphemeral(true).queue();
+                return;
+            }
             default -> {
                 event.reply("Unknown subcommand executed").queue();
                 return;
@@ -157,13 +174,8 @@ public interface EventHandler {
                 session.storeCandidates();
                 event.reply("Stored this election's candidates for future use").queue();
             }
-            case SUGGEST_NAME -> {
-                event.replyModal(ModalWrapper.SUGGEST.modal()).queue();
-            }
-            default -> {
-                event.reply("Unknown subcommand executed").queue();
-                return;
-            }
+            case SUGGEST_NAME ->  event.replyModal(ModalWrapper.SUGGEST.modal()).queue();
+            default -> event.reply("Unknown subcommand executed").queue();
         }
     };
 
@@ -277,24 +289,6 @@ public interface EventHandler {
         }
 
         event.reply(message).queue();
-    };
-
-    EventHandler RESIDUAL_VOTE_HANDLER = (event, session) -> {
-        String username = event.getUser().getEffectiveName();
-
-        String message;
-
-        Vote vote = session.getUnspentVote(username);
-        if (vote != null) {
-            message = "When your favorite candidates lose, \n" +
-                    "part of your vote is recorded for future elections. \n" +
-                    "Your current *residual* vote is:\n" + vote;
-        } else {
-            message = "You don't have any residual vote weight. \n" +
-                    "Perhaps you've never lost an election!";
-        }
-
-        event.reply(message).setEphemeral(true).queue();
     };
 
     EventHandler HELP_HANDLER = (event, session) -> {

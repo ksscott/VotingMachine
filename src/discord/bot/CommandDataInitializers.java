@@ -39,6 +39,12 @@ public class CommandDataInitializers {
 
     //endregion
 
+    //region Past Vote
+
+    static final SubcommandData VIEW_PAST = new SubcommandData(VIEW_NAME, "View your past vote weights from previous elections");
+
+    //endregion
+
     //region Toggle
 
     public static final String TOGGLE_NAME = "toggle";

@@ -26,8 +26,12 @@ public enum SlashCommand {
                 return data;
             },
             NEW_POLL_HANDLER),
-    PAST_VOTES("past-votes", "Set whether vote weights from past elections are included in this election",
-            ADD_TOGGLES,
+    PAST_VOTES("past-votes", "Vote weights from past elections can be included in this election",
+            data -> {
+                ADD_TOGGLES.apply(data);
+                data.addSubcommands(VIEW_PAST);
+                return data;
+            },
             PAST_VOTES_HANDLER),
     PICK("pick", "Tally votes and pick the winning game(s)",
             PICK_HANDLER),
@@ -87,13 +91,6 @@ public enum SlashCommand {
     DEFAULT_VOTE("default-vote", "Record your current vote as your default preferred vote for future elections",
             data -> data.addSubcommands(SAVE_DEFAULT, LOAD_DEFAULT, CLEAR_DEFAULT),
             DEFAULT_VOTE_HANDLER),
-
-    //endregion
-
-    //region Residual Vote
-
-    RESIDUAL_VOTE("residual-vote", "View your remaining vote weight from previous elections",
-            RESIDUAL_VOTE_HANDLER),
 
     //endregion
 
