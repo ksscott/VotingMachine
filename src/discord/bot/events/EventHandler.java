@@ -129,7 +129,12 @@ public interface EventHandler {
                 .map(game -> "\n*Warning:* " + game.getTitle() + " has a maximum number of players of " + game.getMaxPlayers())
                 .collect(Collectors.joining());
 
-        event.reply("The winner is: " + winnersString + warning).queue();
+        String capsuleArtUrl = winningGames.stream()
+                .filter(game -> game.steamId > 0)
+                .map(game -> "\nhttps://cdn.akamai.steamstatic.com/steam/apps/" + game.steamId + "/capsule_616x353.jpg")
+                .findFirst()
+                .orElse("");
+        event.reply("The winner is: " + winnersString + warning + capsuleArtUrl).queue();
         File resultsFile = Paths.get("./data/flowplot.png").toFile(); // FIXME hard coded
         event.getChannel().sendFiles(FileUpload.fromData(resultsFile)).queue();
     };
