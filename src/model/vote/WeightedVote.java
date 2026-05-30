@@ -76,13 +76,15 @@ public class WeightedVote extends RankedVote implements Cloneable {
                 .map(Math::abs)
                 .reduce(0.0, Double::sum);
 
-        ratings.keySet()
-                .stream()
-                .filter(filter::contains)
-                .forEach(option -> {
-                    Double normalized = ratings.get(option) / sum;
-                    normalizedRatings.put(option, normalized);
-                });
+        if (sum != 0.0) {
+            ratings.keySet()
+                    .stream()
+                    .filter(filter::contains)
+                    .forEach(option -> {
+                        Double normalized = ratings.get(option) / sum;
+                        normalizedRatings.put(option, normalized);
+                    });
+        }
 
         normalizedUpdated = true;
     }
