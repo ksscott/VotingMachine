@@ -176,7 +176,7 @@ public class WeightedVote extends RankedVote implements Cloneable {
         String ratingsString = ratings.keySet()
                 .stream()
                 .sorted((o1, o2) -> Double.compare(ratings.get(o2), ratings.get(o1)))
-                .map(opt -> "(" + opt.name() + "," + ratings.get(opt) + ")")
+                .map(opt -> "(" + opt.name() + "," + String.format("%.3f", ratings.get(opt)) + ")")
                 .collect(Collectors.joining(",\n"));
         String shadowString = this.shadow ? "(shadow)" : "";
         return "WeightedVote{ " + shadowString
