@@ -158,6 +158,7 @@ public interface EventHandler {
                 .stream()
                 .map(Option::name)
                 .sorted()
+                .map(EventHandler::withSteamLink)
                 .collect(Collectors.joining("\n"));
         event.reply(stringList).setEphemeral(true).queue();
     };
@@ -172,6 +173,7 @@ public interface EventHandler {
                         .stream()
                         .map(Option::name)
                         .sorted()
+                        .map(EventHandler::withSteamLink)
                         .collect(Collectors.joining("\n"));
                 event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
             }
@@ -330,9 +332,17 @@ public interface EventHandler {
                 .stream()
                 .map(Option::name)
                 .sorted()
+                .map(EventHandler::withSteamLink)
                 .collect(Collectors.joining("\n"));
         event.reply("Candidates:\n"+stringList).setEphemeral(true).queue();
     };
+
+    static String withSteamLink(String name) {
+        return Game.interpret(name)
+                .filter(game -> game.steamId > 0)
+                .map(game -> "[" + name + "](https://store.steampowered.com/app/" + game.steamId + "/)")
+                .orElse(name);
+    }
 
     //endregion
 
